@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saturday Edge — College Football</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chalk:#F5F4EE;      /* field chalk */
+    --line:#DAD8CE;       /* hash marks */
+    --ink:#17263A;        /* navy */
+    --ink-2:#5B6778;
+    --turf:#2E7D4F;       /* model side */
+    --turf-deep:#1F5A38;
+    --away:#C9B458;       /* away side (gold) */
+    --flag:#D9532B;       /* edge flag */
+    --card:#FFFFFF;
+    --r:6px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--chalk);color:var(--ink);font-family:"Barlow",system-ui,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
+  body{padding:env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom))}
+  .wrap{max-width:560px;margin:0 auto;padding:0 14px}
+
+  header{padding:18px 0 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:3px solid var(--ink)}
+  h1{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:40px;line-height:.9;letter-spacing:-.01em}
+  h1 small{display:block;font-weight:600;font-size:17px;color:var(--ink-2);letter-spacing:0;margin-top:6px;font-family:"Barlow",sans-serif}
+  .status{font-size:13px;color:var(--ink-2);text-align:right;line-height:1.3;max-width:46%}
+  .status b{color:var(--ink);font-weight:600}
+
+  .controls{padding:14px 0 6px;border-bottom:1px solid var(--line)}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:10px 4px;font-size:13px;border-color:var(--line);background:var(--card);color:var(--ink-2)}
+  .seg button.on{background:var(--turf);border-color:var(--turf);color:#fff}
+  .seg button:disabled{opacity:.45;cursor:default}
+  #learn tr.best td{font-weight:700;color:var(--turf-deep)}
+  .btns{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .stake{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600}
+  .stake input{width:70px;font:inherit;padding:7px 8px;border:1.5px solid var(--ink);border-radius:var(--r);background:var(--card)}
+  button{font:inherit;font-weight:600;font-size:14px;padding:9px 14px;border-radius:var(--r);border:1.5px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+  button.primary{background:var(--ink);color:var(--chalk)}
+  button:focus-visible,input:focus-visible,.game:focus-visible{outline:3px solid var(--away);outline-offset:2px}
+  .hint{font-size:13px;color:var(--ink-2);margin-top:8px}
+  .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .chips button{white-space:nowrap;padding:6px 11px;font-size:13px;border-color:var(--line);color:var(--ink-2);flex:0 0 auto}
+  .chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .rank{font-weight:700;color:var(--flag)}
+  .empty{margin-top:18px;padding:14px;border:1.5px dashed var(--line);border-radius:var(--r);color:var(--ink-2);font-size:14px}
+
+  .day{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;margin:22px 0 8px;display:flex;align-items:baseline;gap:8px}
+  .day span{font-family:"Barlow",sans-serif;font-weight:400;font-size:13px;color:var(--ink-2)}
+
+  .game{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:12px 12px 10px;margin-bottom:10px;cursor:pointer}
+  .game.flag{border-color:var(--flag)}
+  .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .team{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:26px;line-height:1}
+  .team small{font-family:"Barlow",sans-serif;font-weight:400;font-size:12px;color:var(--ink-2);display:block;margin-top:2px}
+  .team.right{text-align:right}
+  .pct{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:30px;line-height:1}
+  .pct.dim{color:var(--ink-2);font-weight:600}
+
+  /* the probability bar: away (gold) left, home (turf) right; tick = market implied */
+  .bar{position:relative;height:18px;border-radius:3px;overflow:visible;background:var(--away)}
+  .bar .home{position:absolute;right:0;top:0;bottom:0;background:var(--turf);border-radius:0 3px 3px 0}
+  .bar .tick{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);transform:translateX(-50%)}
+  .bar .tick::after{content:"";position:absolute;left:50%;top:-6px;width:0;height:0;border:5px solid transparent;border-top-color:var(--ink);transform:translateX(-50%)}
+  .score{display:flex;justify-content:space-between;align-items:baseline;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:34px;line-height:1;margin:-2px 0 8px;color:var(--ink-2)}
+  .score.live{color:var(--ink)}
+  .score .clock{font-family:"Barlow",sans-serif;font-weight:600;font-size:12px;color:var(--flag);letter-spacing:.04em;text-transform:uppercase}
+  .score:not(.live) .clock{color:var(--ink-2)}
+  .livewp{font-size:12px;color:var(--ink-2);margin:-4px 0 8px}
+  .legend{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);margin-top:9px}
+  .legend b{color:var(--ink);font-weight:600}
+  .legend span:nth-child(2){text-align:center}
+  .move{font-size:11px;font-weight:600;padding:1px 5px;border-radius:3px;margin-left:4px;white-space:nowrap}
+  .move.with{color:var(--turf-deep);background:#E3F0E8} .move.against{color:var(--flag);background:#F8E4DC}
+  .lean{margin-top:8px;font-size:14px;font-weight:600;color:var(--flag)}
+  .lean.none{color:var(--ink-2);font-weight:400}
+
+  .detail{display:none;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px}
+  .game.open .detail{display:block}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  td,th{padding:4px 2px;text-align:right;font-variant-numeric:tabular-nums}
+  th{font-weight:500;color:var(--ink-2);text-align:right}
+  td:first-child,th:first-child{text-align:left;color:var(--ink-2)}
+  .spreadrow{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .spreadrow label{color:var(--ink-2)}
+  .spreadrow input{width:84px;font:inherit;padding:6px 8px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--chalk)}
+  .note{font-size:12px;color:var(--ink-2);margin-top:8px}
+
+  .record{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:600;margin-top:16px;color:var(--ink-2)}
+  .record b{color:var(--ink);font-weight:800;font-size:24px}
+  .grade{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:3px;font-size:12px;font-weight:700;color:#fff;background:var(--ink-2)}
+  .grade.W{background:var(--turf)} .grade.L{background:var(--flag)}
+  .mini{padding:2px 8px;font-size:12px;border-width:1px;margin-left:6px;vertical-align:middle}
+  .ledger-stats{display:flex;flex-wrap:wrap;gap:6px 18px;margin:6px 0 8px;font-size:14px;color:var(--ink-2)} .ledger-stats b{color:var(--ink)} .pos{color:var(--turf-deep)!important} .neg{color:var(--flag)!important}
+  .tablewrap{overflow-x:auto} .tablewrap table{min-width:520px}
+  .alert{margin-top:14px;padding:10px 12px;border-radius:var(--r);background:#FFF3E9;border:1.5px solid var(--flag);font-size:14px} .alert b{color:var(--flag)}
+  .best .day{display:none}
+  .disclaimer{margin-top:24px;font-size:13px;color:var(--ink-2)} .disclaimer a{color:var(--ink)}
+  .method{margin-top:28px;padding:14px;border:1.5px solid var(--line);border-radius:var(--r);font-size:14px;background:var(--card)}
+  .method h2{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:700;margin-bottom:6px}
+  .method p{margin-bottom:8px;color:var(--ink-2)}
+  .method p b{color:var(--ink)}
+  @media (prefers-reduced-motion:no-preference){ .bar .home{transition:width .35s ease} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Saturday Edge<small><span id="wk">FBS</span> · win probability vs. the spread</small></h1>
+    <div class="status" id="status" aria-live="polite">Loading FBS results from ESPN…</div>
+  </header>
+
+  <section class="controls">
+    <div class="seg" role="group" aria-label="Weight on season stats vs the market line">
+      <button type="button" data-w="100">Stats only</button>
+      <button type="button" data-w="65">Stats-heavy</button>
+      <button type="button" data-w="35" class="on">Blend</button>
+      <button type="button" data-w="0">Market only</button>
+      <button type="button" id="autoBtn" data-w="35" disabled title="Uses the weight that backtested best">Auto</button>
+    </div>
+    <input type="hidden" id="w" value="35">
+    <div class="btns">
+      <label class="stake">Bet $<input id="stake" type="number" min="0" step="5" value="100" inputmode="decimal"></label>
+      <label class="stake">Bankroll $<input id="bank" type="number" min="0" step="50" value="1000" inputmode="decimal" style="width:84px"></label>
+      <button class="primary" id="refresh">Refresh from ESPN</button>
+      <button id="toggleAll">Expand all</button>
+      <button id="share">Share picks</button>
+      <button id="best" aria-pressed="false">Best bets</button>
+      <button id="recap">Recap</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
+    <div class="hint" id="hint">Gold = away, green = home. The dark tick is where the betting line puts it. Tap a game for the numbers.</div>
+  </section>
+
+  <div id="alerts"></div>
+  <div class="record" id="record"></div>
+  <div id="games"></div>
+
+  <section class="method" id="ledger"></section>
+  <section class="method" id="movers"></section>
+
+  <p class="disclaimer">For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+
+  <section class="method" id="learn"></section>
+
+  <section class="method">
+    <h2>How the number is built</h2>
+    <p><b>Team rating.</b> Every FBS game played this season counts: point margin (home field removed, capped at ±35 so a 70-point rout counts like a 35-point one), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
+    <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest, and a line on one is a rough prior at best.</p>
+    <p><b>Neutral sites &amp; rest.</b> Kickoff classics, rivalry games at neutral venues, and conference title games get no home-field points. The model line gets ±0.3 points per day of rest advantage (byes, Friday games). ESPN injury data is thin for college football, so injuries are applied only when the feed has them.</p>
+    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks. Closing-line value is recorded when the game kicks off.</p>
+    <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the FBS average of 28.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 16-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
+    <p><b>Learning.</b> After each completed week the app replays the season: for every past week it rebuilds ratings from only the weeks before, predicts that week, and scores each stats/market weight and shrink speed against the real margins. The <b>Auto</b> button uses whatever backtested best. With 60-odd FBS games a week it has something to say after Week 3.</p>
+    <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
+    <p><b>Model line.</b> Home rating − away rating + 2.5 pts home field (0 at a neutral site).</p>
+    <p><b>Blend.</b> The slider mixes the model line with the market line. Default is 35% stats / 65% market, because the line already prices injuries, weather, and matchups. Nudge it toward stats as the season goes on.</p>
+    <p><b>Probability.</b> Expected margin ÷ 16 (the historical std. dev. of FBS margins, wider than the NFL's 13.5) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with a little extra weight on 3 and 7 — key numbers matter in college, but less than in the pros. College football has no ties, so a 0 margin is impossible. A pick is a play only when the cover chance is ≥54.5% (break-even is 52.4%); otherwise it's a pass. Once a game is final the pick grades W/L and the record at the top updates.</p>
+    <p><b>Coverage.</b> Regular season, FBS games only (Weeks 1–16 on ESPN's calendar, including conference championships). Bowls and the playoff aren't loaded.</p>
+  </section>
+</div>
+
+<script>
+/* ---------- constants ---------- */
+let YEAR = 2026, CUR = 4;                          // season + current week; auto-detected from ESPN when online
+const HFA = 2.5, SD = 16, LEAN_MIN = 1.5, MARGIN_CAP = 35, FCS_R = -22, MAX_WEEK = 16, SHARE_MAX = 18;
+const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
+const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
+                set(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
+let K_SHRINK = store.get("k", 2.33);                              // games-played shrink: n/(n+K) → 30% at 1 game, 63% at 4, 81% at 10
+let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {});
+let bets = store.get("bets", []), lastSeen = store.get("lastSeen", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
+let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", [])), filterMode = store.get("filter", "all");
+const saveBets = () => store.set("bets", bets);
+const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
+function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
+const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
+const FBS_Q = "groups=80&limit=300";                              // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
+const isFBS = t => !fbs.size || fbs.has(t);                       // until the team list loads, trust everyone
+const nameOf = t => `${rank[t] && rank[t] <= 25 ? `<span class="rank">#${rank[t]}</span> ` : ""}${names[t]?.short || ""}`;
+const confOf = t => names[t]?.conf ?? null;
+const CONF = {1:"ACC", 4:"Big 12", 5:"Big Ten", 8:"SEC", 9:"Pac-12", 12:"C-USA", 15:"MAC", 17:"Mountain West", 18:"Independent", 37:"Sun Belt", 151:"American"};
+const POWER = ["1","4","5","8"];
+const CHIPS = [["all","All FBS"],["top25","Top 25"],["8","SEC"],["5","Big Ten"],["1","ACC"],["4","Big 12"],["g5","Other FBS"]];
+const inFilter = g => { if(filterMode==="all") return true;
+  if(filterMode==="top25") return (rank[g.home] && rank[g.home] <= 25) || (rank[g.away] && rank[g.away] <= 25);
+  if(filterMode==="g5") return !POWER.includes(String(confOf(g.home))) && !POWER.includes(String(confOf(g.away)));
+  return String(confOf(g.home))===filterMode || String(confOf(g.away))===filterMode; };
+const norm = a => a;
+
+/* ---------- no built-in slate: FBS plays 60+ games a week, so everything comes from ESPN at load time ---------- */
+const FALLBACK_W1 = [], FALLBACK_W2 = [];
+
+/* ---------- state ---------- */
+let week1 = FALLBACK_W1, week2 = FALLBACK_W2, ratings = {}, overrides = {}, live = false;
+
+/* ---------- math ---------- */
+/* Margins are discrete and pile up a little on 3 and 7. Build an integer distribution from a normal curve, then
+   scale the key numbers to roughly their real frequencies (college lands on 3 and 7 less often than the NFL does). */
+const KEY = {0:0, 1:.9, 2:.9, 3:1.35, 4:1.05, 5:.9, 6:1.05, 7:1.25, 8:.95, 10:1.1, 14:1.1, 17:1.05, 21:1.05};   // no ties in college; 3 and 7 matter less than in the NFL
+const distCache = {};
+function margDist(mu){                              // -> Map(int -> p) for home margin with expected value mu
+  const k = mu.toFixed(1); if(distCache[k]) return distCache[k];
+  const pmf = new Map(); let tot = 0;
+  for(let m = -90; m <= 90; m++){ const z = (m - mu)/SD; let p = Math.exp(-z*z/2) * (KEY[Math.abs(m)] ?? 1); pmf.set(m, p); tot += p; }
+  for(const [m,p] of pmf) pmf.set(m, p/tot);
+  return distCache[k] = pmf;
+}
+const pGreater = (mu, x) => { let p = 0; for(const [m,q] of margDist(mu)) if(m > x) p += q; return p; };
+const pEqual   = (mu, x) => margDist(mu).get(Math.round(x)) ?? 0;
+const winP   = mu => { const t = pEqual(mu, 0); return pGreater(mu, 0) / (1 - t); };                 // ties excluded
+const coverP = (mu, spread) => { const x = -spread; const push = Number.isInteger(x) ? pEqual(mu, x) : 0; return pGreater(mu, x) / (1 - push); };  // P(home covers | no push)
+const Phi = z => { const t = 1/(1+0.2316419*Math.abs(z)); const d = 0.3989423*Math.exp(-z*z/2);
+  const p = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
+
+function buildRatings(games = week1, K = K_SHRINK){
+  const perf = {};                                   // team -> [{v, opp}]
+  for(const g of games){
+    if(!g.final) continue;
+    const m = Math.max(-MARGIN_CAP, Math.min(MARGIN_CAP, g.hs - g.as)), st = g.stats || {};
+    const yppD = (st.ypp?.[g.home] ?? 0) - (st.ypp?.[g.away] ?? 0);
+    const toD  = (st.to?.[g.away] ?? 0) - (st.to?.[g.home] ?? 0);
+    const v = (m - (g.neutral ? 0 : HFA)) + 3.0*yppD + 2.0*toD;      // home's single-game performance, home field removed
+    (perf[g.home] ||= []).push({v, opp:g.away});
+    (perf[g.away] ||= []).push({v:-v, opp:g.home});
+  }
+  const target = t => isFBS(t) ? 0 : FCS_R;         // shrink FBS teams toward average, FCS visitors toward an FCS prior
+  let r = {}; for(const t in perf) r[t] = target(t);
+  for(let pass = 0; pass < 5; pass++){              // opponent adjustment: credit performance against good teams
+    const next = {};
+    for(const t in perf){
+      const n = perf[t].length;
+      const raw = perf[t].reduce((a,p) => a + p.v + (r[p.opp] ?? target(p.opp)), 0) / n;
+      next[t] = (raw*n + target(t)*K) / (n + K);
+    }
+    const fb = Object.keys(next).filter(isFBS);
+    const mean = fb.reduce((a,t)=>a+next[t],0) / Math.max(1, fb.length);
+    for(const t of fb) next[t] -= mean;              // FBS average = 0; FCS teams stay anchored below it
+    r = next;
+  }
+  return r;
+}
+/* ---------- learning: walk-forward backtest ----------
+   For every completed week after Week 1, rebuild ratings from ONLY the weeks before it, predict that week's
+   games, and score each setting against what actually happened. No game ever grades itself. */
+const AUTO_MIN = 150, K_MIN = 250, PRIOR_N = 150;  // ~60 FBS games a week: Auto unlocks after ~3 weeks of backtest, shrink retunes after ~4; the prior counts as 150 games
+const WEIGHTS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1], KS = [1, 2.33, 4, 8];
+let learn = {n:0, rows:[], best:null, auto:null};
+function backtest(){
+  const done = week1.filter(g => g.final && g.spread != null && g.week > 1 && isFBS(g.home) && isFBS(g.away));
+  const res = {}; for(const K of KS) for(const w of WEIGHTS) res[K+"|"+w] = {K, w, se:0, ae:0, brier:0, W:0, L:0, P:0, n:0};
+  const cache = {};
+  for(const g of done){
+    const actual = g.hs - g.as, market = -g.spread;
+    for(const K of KS){
+      const r = cache[g.week+"|"+K] ||= buildRatings(week1.filter(x => x.final && x.week < g.week), K);
+      const model = (r[g.home] ?? 0) - (r[g.away] ?? 0) + HFA;
+      for(const w of WEIGHTS){
+        const b = res[K+"|"+w], blend = w*model + (1-w)*market, p = winP(blend);
+        b.se += (blend-actual)**2; b.ae += Math.abs(blend-actual); b.brier += (p - (actual>0?1:0))**2; b.n++;
+        const cover = actual + g.spread; if(cover===0) b.P++; else if((cover>0) === (blend >= market)) b.W++; else b.L++;
+      }
+    }
+  }
+  const rows = Object.values(res).filter(b => b.n).map(b => ({...b, rmse:Math.sqrt(b.se/b.n), mae:b.ae/b.n, brier:b.brier/b.n}));
+  let best = null; for(const b of rows) if(!best || b.rmse < best.rmse - 1e-9 || (Math.abs(b.rmse-best.rmse) < 1e-9 && b.w < best.w)) best = b;   // ties → trust the market
+  const n = done.length, ready = n >= AUTO_MIN;
+  const auto = best ? (n*best.w + PRIOR_N*0.35) / (n + PRIOR_N) : null;   // shrink the winner toward the 35% prior
+  learn = {n, rows, best, auto, ready};
+  if(best && n >= K_MIN && best.K !== K_SHRINK){ K_SHRINK = best.K; store.set("k", K_SHRINK); }
+  const btn = document.getElementById("autoBtn");
+  if(btn){ btn.textContent = ready ? `Auto (${Math.round(auto*100)}%)` : `Auto (${n}/${AUTO_MIN})`; btn.disabled = !ready; btn.dataset.w = ready ? Math.round(auto*100) : 35; }
+  if(document.getElementById("w").dataset.auto === "1" && ready) document.getElementById("w").value = Math.round(auto*100);
+  renderLearn();
+}
+function renderMovers(){
+  const box = document.getElementById("movers"); if(!box) return;
+  const teams = Object.keys(ratings).filter(isFBS); if(!teams.length){ box.innerHTML = ""; return; }
+  const prevGames = week1.filter(g => g.final && g.week < CUR-1);
+  const prev = prevGames.length ? buildRatings(prevGames) : null;
+  const why = t => { const gs = week1.filter(g => g.final && g.week === CUR-1 && (g.home===t || g.away===t)); const g = gs[0]; if(!g) return "bye";
+    const me = g.home===t?g.hs:g.as, them = g.home===t?g.as:g.hs, opp = g.home===t?g.away:g.home, st = g.stats;
+    const parts = [`${me>them?"beat":"lost to"} ${opp} ${me}–${them}`];
+    if(st?.ypp){ parts.push(`${st.ypp[t]?.toFixed(1)} vs ${st.ypp[opp]?.toFixed(1)} yds/play`); }
+    if(st?.to){ const d = (st.to[opp]??0)-(st.to[t]??0); if(d) parts.push(`TO ${d>0?"+":""}${d}`); }
+    return parts.join(", "); };
+  const rows = teams.map(t => ({t, now: ratings[t], d: prev ? ratings[t] - (prev[t] ?? 0) : ratings[t]})).sort((a,b) => b.d - a.d);
+  const up = rows.slice(0,5), down = rows.slice(-5).reverse();
+  const li = r => `<tr><td><b>${r.t}</b> ${nameOf(r.t)}</td><td>${fmt(r.d)}</td><td>${fmt(r.now)}</td><td>${why(r.t)}</td></tr>`;
+  box.innerHTML = `<h2>${prev ? `Rating movers after Week ${CUR-1}` : `Power ratings after Week ${CUR-1}`}</h2>
+    <p>${prev ? "Biggest changes in the model's rating since last week, and the game that caused them." : "First week of data, so these are the rankings themselves rather than changes. Movers appear from Week 3."}</p>
+    <div class="tablewrap"><table><tr><th>Up</th><th>Δ</th><th>Rating</th><th>Why</th></tr>${up.map(li).join("")}</table></div>
+    <div class="tablewrap"><table><tr><th>Down</th><th>Δ</th><th>Rating</th><th>Why</th></tr>${down.map(li).join("")}</table></div>
+    <h2 style="margin-top:16px">Model top 25</h2>
+    <p>The model's own ranking by rating, next to the AP rank ESPN shows. Big gaps between the two are where the model disagrees with the polls.</p>
+    <div class="tablewrap"><table><tr><th>#</th><th>Team</th><th>Rating</th><th>AP</th><th>Games</th></tr>${teams.slice().sort((a,b)=>ratings[b]-ratings[a]).slice(0,25).map((t,i)=>`<tr><td>${i+1}</td><td><b>${t}</b> ${names[t]?.short||""}</td><td>${fmt(ratings[t])}</td><td>${rank[t]&&rank[t]<=25?"#"+rank[t]:"—"}</td><td>${gamesPlayed(t)}</td></tr>`).join("")}</table></div>`;
+}
+function renderLearn(){
+  const box = document.getElementById("learn"); if(!box) return;
+  if(!learn.best){ box.innerHTML = `<h2>What the model has learned</h2><p>Nothing yet. Learning starts once a week of games has been played <i>after</i> the ratings had data to work with — so the first report comes after Week 2 is final.</p>`; return; }
+  const K = learn.best.K, atK = learn.rows.filter(r => r.K === K).sort((a,b) => a.w - b.w);
+  const mkt = atK.find(r => r.w === 0), stats = atK.find(r => r.w === 1);
+  const rowH = r => `<tr${r.w===learn.best.w?' class="best"':''}><td>${Math.round(r.w*100)}% stats</td><td>${r.rmse.toFixed(2)}</td><td>${r.mae.toFixed(2)}</td><td>${r.brier.toFixed(3)}</td><td>${r.W}–${r.L}${r.P?"–"+r.P:""}</td></tr>`;
+  box.innerHTML = `<h2>What the model has learned</h2>
+    <p>Backtested on <b>${learn.n} games</b> across ${new Set(week1.filter(g=>g.final&&g.week>1).map(g=>g.week)).size} week(s), always predicting a week from only the weeks before it.
+    Best raw setting so far: <b>${Math.round(learn.best.w*100)}% stats</b>; blended with the 35% prior that gives Auto = <b>${Math.round(learn.auto*100)}%</b>${learn.ready ? "" : ` (locked until ${AUTO_MIN} games)`}. Shrink K=${K_SHRINK}.
+    ${stats && mkt ? (stats.rmse < mkt.rmse ? `The stats have beaten the market on margin error (${stats.rmse.toFixed(2)} vs ${mkt.rmse.toFixed(2)}).` : `The market still beats stats-only on margin error (${mkt.rmse.toFixed(2)} vs ${stats.rmse.toFixed(2)}).`) : ""}</p>
+    <table><tr><th>Weight</th><th>RMSE</th><th>Avg miss</th><th>Brier</th><th>ATS</th></tr>${atK.map(rowH).join("")}</table>
+    <p class="note">RMSE / avg miss = how far the predicted margin was from the real one, in points (lower is better; a coin-flip line is ~13.5). Brier = win-probability accuracy (0.25 is a coin flip; lower is better). ATS = how the picks would have done. Under ~50 games this bounces around a lot — treat it as a hint, not a verdict.</p>`;
+}
+/* ---------- totals: points scored / allowed per team, shrunk toward league average ---------- */
+const LG_TEAM_PTS = 28.5;                            // FBS average points per team-game
+const rawAvg = (t, games) => { const gs = games.filter(g => g.final && (g.home===t || g.away===t)); const n = gs.length;
+  return n ? {pf: gs.reduce((a,g)=>a+(g.home===t?g.hs:g.as),0)/n, pa: gs.reduce((a,g)=>a+(g.home===t?g.as:g.hs),0)/n} : {pf:LG_TEAM_PTS, pa:LG_TEAM_PTS}; };
+function scoring(t, games = week1){
+  const gs = games.filter(g => g.final && (g.home===t || g.away===t)); const n = gs.length;
+  if(!n) return {pf:LG_TEAM_PTS, pa:LG_TEAM_PTS, n:0};
+  // opponent-adjusted: points scored vs. what that opponent usually allows, points allowed vs. what that opponent usually scores
+  const pf = gs.reduce((a,g) => { const opp = g.home===t ? g.away : g.home, o = rawAvg(opp, games); return a + (g.home===t ? g.hs : g.as) - (o.pa - LG_TEAM_PTS); }, 0)/n;
+  const pa = gs.reduce((a,g) => { const opp = g.home===t ? g.away : g.home, o = rawAvg(opp, games); return a + (g.home===t ? g.as : g.hs) - (o.pf - LG_TEAM_PTS); }, 0)/n;
+  const k = n/(n+K_SHRINK);                          // same trust curve as the ratings
+  return {pf: LG_TEAM_PTS + k*(pf-LG_TEAM_PTS), pa: LG_TEAM_PTS + k*(pa-LG_TEAM_PTS), n};
+}
+function projectTotal(g){ const h = scoring(g.home), a = scoring(g.away);
+  return (h.pf + a.pa)/2 + (a.pf + h.pa)/2; }       // home expected pts + away expected pts
+function evalTotal(g, w){
+  if(g.ou == null) return null;
+  const model = projectTotal(g), blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
+  return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under"};
+}
+const gamesPlayed = t => week1.filter(g => g.final && (g.home===t || g.away===t)).length;
+const lastGameTs = t => { const gs = week1.filter(x => x.final && (x.home===t || x.away===t) && x.ts); return gs.length ? Math.max(...gs.map(x=>x.ts)) : null; };
+function restAdj(g){                                 // + favors home. ~0.3 pts per day of rest edge, capped
+  const h = lastGameTs(g.home), a = lastGameTs(g.away); if(!h || !a || !g.ts) return {pts:0, text:""};
+  const rh = Math.round((g.ts-h)/864e5), ra = Math.round((g.ts-a)/864e5), d = Math.max(-5, Math.min(5, rh - ra));
+  return {pts: 0.3*d, text: d ? `${d>0?g.home:g.away} +${Math.abs(d)} days rest` : ""};
+}
+function injAdj(t){                                  // penalty in points for listed Out/Doubtful players; QB dominates
+  const list = injuries[t] || []; let pts = 0; const notes = [];
+  for(const i of list){ const out = /out|doubtful|ir\b/i.test(i.status), q = /questionable/i.test(i.status);
+    if(!out && !q) continue;
+    const w = i.pos==="QB" ? (out?4:1) : /^(RB|WR|TE|OT|OG|C|G|T|OL|DE|DT|DL|LB|EDGE|CB|S|DB)$/.test(i.pos) ? (out?0.5:0.15) : 0.1;
+    pts += w; if(out || i.pos==="QB") notes.push(`${i.name} (${i.pos}) ${i.status}`); }
+  return {pts: Math.min(6, pts), notes};
+}
+function evaluate(g, w){
+  const rh = ratings[g.home] ?? 0, ra = ratings[g.away] ?? 0;
+  const rest = restAdj(g), ih = injAdj(g.home), ia = injAdj(g.away);
+  const modelLine = rh - ra + (g.neutral ? 0 : HFA) + rest.pts - ih.pts + ia.pts;   // expected home margin; no home field at a neutral site
+  const spread = overrides[g.home+g.away] ?? g.spread; // home-relative, negative = home favored
+  const market = spread == null ? null : -spread;    // market expected home margin
+  const blend = market == null ? modelLine : w*modelLine + (1-w)*market;
+  const pHome = winP(blend);
+  const pMkt  = market == null ? null : winP(market);
+  const edge  = market == null ? 0 : blend - market;
+  const pickHome = market == null ? null : edge >= 0;                 // side the blend favors vs the number
+  let ats = null;                                                      // "W" | "L" | "P" once the game is final
+  if(pickHome != null && g.final){ const cover = (g.hs - g.as) + spread; ats = cover === 0 ? "P" : (cover > 0) === pickHome ? "W" : "L"; }
+  const move = (g.open!=null && spread!=null) ? spread - g.open : 0;   // home-relative; negative = money on home
+  const pCoverHome = spread == null ? null : coverP(blend, spread);
+  const pCover = pickHome == null ? null : (pickHome ? pCoverHome : 1 - pCoverHome);   // chance the pick covers
+  const evPer100 = pCover == null ? null : pCover*100*100/110 - (1-pCover)*100;        // $ EV per $100 at -110
+  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, hasRating: g.home in ratings && g.away in ratings};
+}
+
+/* ---------- render ---------- */
+const fmt = (n,d=1) => (n>0?"+":"") + n.toFixed(d);
+const pct = p => Math.round(p*100) + "%";
+const ouText = g => { if(g.ou==null) return ""; const live = g.state==="in" || g.final; if(!live) return `O/U <b>${g.ou}</b>`;
+  const pts = g.hs + g.as, diff = pts - g.ou; return `<b>${pts}</b> pts · O/U ${g.ou} (${g.final ? (diff>0?"OVER":diff<0?"UNDER":"PUSH") : diff>=0?"over by "+diff:"needs "+(-diff)})`; };
+const stake = () => Math.max(0, +document.getElementById("stake").value || 0);
+const profit = (ml, st) => ml==null ? null : ml > 0 ? st*ml/100 : st*100/(-ml);
+const implied = ml => ml==null ? null : ml > 0 ? 100/(ml+100) : -ml/(-ml+100);
+const mlText = ml => ml==null ? "—" : (ml>0?"+":"")+ml;
+const money = n => n==null ? "—" : "$"+n.toFixed(2);
+/* ---------- bet log ---------- */
+const bankroll = () => Math.max(0, +document.getElementById("bank").value || 0);
+const dec = ml => ml > 0 ? 1 + ml/100 : 1 + 100/(-ml);
+function kelly(p, ml){ const b = dec(ml) - 1, f = (b*p - (1-p))/b; return Math.max(0, f); }
+const kellyText = (p, ml) => { const f = kelly(p, ml); if(f <= 0) return ""; const half = f/2 * bankroll(); return ` · ½-Kelly $${half.toFixed(0)} (${(f*100).toFixed(1)}% full)`; };
+function logBet(g, type, side, line, price, p){
+  const st = +(prompt(`Stake for ${side} ${type==="total"?line:type==="spread"?(line>0?"+":"")+line:mlText(price)} at ${mlText(price)}?`, Math.max(1, Math.round(kelly(p,price)/2*bankroll() || stake())) ) || 0);
+  if(!st) return;
+  bets.push({id: Date.now(), key: gkey(g), week: g.week, game: `${g.away} @ ${g.home}`, home: g.home, away: g.away, type, side, line, price, stake: st, p, ts: Date.now(), closing: null, result: null, profit: 0});
+  saveBets(); render();
+}
+function gradeBets(){
+  for(const b of bets){
+    const g = [...week1, ...week2].find(x => gkey(x) === b.key); if(!g) continue;
+    if(b.closing == null && (g.state==="in" || g.final)){ b.closing = b.type==="total" ? g.ou : g.spread; }   // last line seen at kickoff
+    if(g.final && b.result == null){
+      let r;
+      if(b.type==="spread"){ const cov = b.side===g.home ? (g.hs - g.as) + b.line : (g.as - g.hs) + b.line; r = cov===0?"P":cov>0?"W":"L"; }
+      else if(b.type==="total"){ const d = (g.hs+g.as) - b.line; r = d===0?"P":(d>0)===(b.side==="Over")?"W":"L"; }
+      else { const win = b.side===g.home ? g.hs>g.as : g.as>g.hs; r = g.hs===g.as?"P":win?"W":"L"; }
+      b.result = r; b.profit = r==="W" ? profit(b.price, b.stake) : r==="L" ? -b.stake : 0;
+    }
+  }
+  saveBets();
+}
+function clvOf(b){                                  // closing-line value in points, positive = you beat the close
+  if(b.closing == null || b.line == null || b.type==="ml") return null;
+  if(b.type==="total") return b.side==="Over" ? b.closing - b.line : b.line - b.closing;
+  const mine = b.side===b.home ? b.line : -b.line, close = b.side===b.home ? b.closing : -b.closing;   // spread from bettor's side
+  return mine - close;
+}
+function renderLedger(){
+  const box = document.getElementById("ledger"); if(!box) return;
+  gradeBets();
+  const unit = stake() || 100;
+  const done = bets.filter(b => b.result), W = done.filter(b=>b.result==="W").length, L = done.filter(b=>b.result==="L").length, P = done.filter(b=>b.result==="P").length;
+  const pl = done.reduce((a,b)=>a+b.profit,0), risked = done.reduce((a,b)=>a+b.stake,0);
+  const clvs = bets.map(clvOf).filter(v=>v!=null), avgClv = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
+  const openB = bets.filter(b=>!b.result);
+  const row = b => `<tr><td>Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?"—":(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:"open"}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`;
+  box.innerHTML = `<h2>Bet log</h2>
+    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)} pts</b></span><span>Open <b>${openB.length}</b></span></div>
+    <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${bets.slice().reverse().map(row).join("")}</table></div>
+    <p class="note">CLV = closing-line value: how many points better your number was than the line at kickoff. Beating the close consistently is the earliest sign a model is real; a W–L record needs hundreds of bets to say the same thing. 1 unit = your bet-size field.</p>`
+    : `<p>No bets logged. Tap <b>Log</b> on a play to record it (side, price, stake, time). The log grades itself, tracks profit in dollars and units, and measures closing-line value.</p>`}`;
+  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { bets = bets.filter(x => String(x.id) !== b.dataset.del); saveBets(); render(); }));
+}
+const blendFor = g => { const w = +document.getElementById("w").value/100; if(g.week === CUR){ return evaluate(g, w).blend; } const sp = overrides["w1"+g.home+g.away] ?? g.spread; return sp==null ? 0 : -sp; };
+const payoutTable = (g, pHome, pickHome, spread) => { const st = stake(); if(!st) return "";
+  const iH = implied(g.mlH), iA = implied(g.mlA);
+  const hold = iH!=null && iA!=null ? iH + iA : null;                                  // > 1: the book's vig
+  const fH = hold ? iH/hold : iH, fA = hold ? iA/hold : iA;                            // de-vigged fair probabilities
+  const valH = fH!=null && pHome!=null ? pHome - fH : null, valA = fA!=null && pHome!=null ? (1-pHome) - fA : null;
+  const ev = (p, ml) => p==null || ml==null ? "" : (() => { const v = p*profit(ml,st) - (1-p)*st; return `<div class="note">EV ${v>=0?"+":"−"}$${Math.abs(v).toFixed(2)}</div>`; })();
+  const tag = v => v==null ? "" : v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : "";
+  const pc = spread==null ? null : (pickHome ? coverP(blendFor(g), spread) : 1 - coverP(blendFor(g), spread));
+  const sp = spread==null ? "" : `<tr><td>Spread pick ${pickHome?g.home:g.away} ${(pickHome?spread:-spread)>0?"+":""}${(pickHome?spread:-spread).toFixed(1)} (-110)${ev(pc, -110)}</td><td>${money(st*100/110)}</td><td>${pct(BREAK_EVEN)}</td><td>${pc==null?"—":pct(pc)}</td></tr>`;
+  const t = evalTotal(g, +document.getElementById("w").value/100);
+  const be = pct(100/210);                                                   // -110 break-even
+  return `<table><tr><th>$${st} bet · profit if it hits</th><th>Profit</th><th>Fair</th><th>Model</th></tr>
+    ${sp}
+    <tr><td>${g.away} moneyline ${mlText(g.mlA)}${tag(valA)}${ev(pHome==null?null:1-pHome, g.mlA)}${g.mlA!=null&&!g.final&&g.state!=="in"?` <button class="mini" data-log="ml" data-side="${g.away}" data-line="0" data-p="${pHome==null?0.5:1-pHome}">Log</button>`:""}</td><td>${money(profit(g.mlA,st))}</td><td>${fA==null?"—":pct(fA)}</td><td>${pHome==null?"—":pct(1-pHome)}</td></tr>
+    <tr><td>${g.home} moneyline ${mlText(g.mlH)}${tag(valH)}${ev(pHome, g.mlH)}${g.mlH!=null&&!g.final&&g.state!=="in"?` <button class="mini" data-log="ml" data-side="${g.home}" data-line="0" data-p="${pHome==null?0.5:pHome}">Log</button>`:""}</td><td>${money(profit(g.mlH,st))}</td><td>${fH==null?"—":pct(fH)}</td><td>${pHome==null?"—":pct(pHome)}</td></tr>
+    ${g.ou!=null?`<tr><td>Over ${g.ou} (-110)${tagT(g, true)}</td><td>${money(st*100/110)}</td><td>${be}</td><td>${t?pct(t.pOver):"—"}</td></tr>
+    <tr><td>Under ${g.ou} (-110)${tagT(g, false)}</td><td>${money(st*100/110)}</td><td>${be}</td><td>${t?pct(1-t.pOver):"—"}</td></tr>`:""}</table>
+  <div class="note">Fair = the book's price with its vig removed${hold?` (hold ${((hold-1)*100).toFixed(1)}%)`:""}. Model = this app's estimate. Value tags fire when Model beats Fair by 3+ points; EV is dollars expected per bet at the actual price.</div>`; };
+const tagT = (g, over) => { const t = evalTotal(g, +document.getElementById("w").value/100); if(!t) return "";
+  const p = over ? t.pOver : 1-t.pOver, v = p - BREAK_EVEN;         // vs. the -110 break-even (52.4%)
+  return v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : ""; };
+const spreadText = (g,s) => s==null ? "no line" : s<0 ? `${g.home} ${s.toFixed(1)}` : s>0 ? `${g.away} ${(-s).toFixed(1)}` : "pick";
+
+function render(){
+  const w = +document.getElementById("w").value/100;
+  document.getElementById("hint").textContent = `Weighting: ${Math.round(w*100)}% season stats (through Week ${Math.max(1,CUR-1)}) / ${Math.round((1-w)*100)}% market line. Gold = away, green = home, dark tick = the betting line. Tap a game's header for the numbers.`;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
+
+  const open = new Set([...document.querySelectorAll(".game.open")].map(e=>e.dataset.key));
+  const rec = {W:0,L:0,P:0};
+  const wrap = document.getElementById("games"); wrap.innerHTML = "";
+  for(const g of week1.filter(x=>!x.final)){
+    const h = document.createElement("div"); h.className="day"; h.innerHTML = `Week ${g.week ?? CUR-1} · ${g.day} <span>${g.state==="in"?"in progress":g.time}</span>`; wrap.appendChild(h);
+    const inPlay = g.state==="in";
+    const card = document.createElement("div"); card.className = "game" + (open.has("w1"+g.home+g.away)?" open":""); card.dataset.key = "w1"+g.home+g.away; card.tabIndex = 0;
+    const sp = overrides["w1"+g.home+g.away] ?? g.spread ?? null;
+    const mkt = sp==null ? null : winP(-sp);                         // market-implied home win %
+    const wp = inPlay && g.liveWP!=null ? g.liveWP : mkt;
+    const wpLabel = inPlay && g.liveWP!=null ? "ESPN in-game win probability" : "Market-implied win probability";
+    let cover = "";
+    if(sp!=null && inPlay){ const c = (g.hs - g.as) + sp; const favHome = sp<0; const ok = c===0?null:(c>0)===favHome;
+      cover = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${favHome?g.home:g.away} ${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(c).toFixed(1)}</span>`; }
+    card.innerHTML = `
+      <div class="top">
+        <div class="team">${g.away}<small>${nameOf(g.away)} · away</small></div>
+        <div class="pct ${wp!=null&&wp<.5?"":"dim"}">${wp==null?"—":pct(1-wp)}</div>
+        <div class="pct ${wp!=null&&wp>=.5?"":"dim"}">${wp==null?"—":pct(wp)}</div>
+        <div class="team right">${g.home}<small>${nameOf(g.home)} · ${g.neutral?"neutral":"home"}</small></div>
+      </div>
+      ${inPlay ? `<div class="score live"><span>${g.poss===g.away?"● ":""}${g.as}</span><span class="clock">LIVE · ${g.clock}${g.down?` · ${g.down}`:""}</span><span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : `<div class="score"><span>${g.away}</span><span class="clock">kickoff ${g.time}</span><span>${g.home}</span></div>`}
+      ${wp!=null?`<div class="bar"><div class="home" style="width:${(wp*100).toFixed(1)}%"></div>${mkt!=null?`<div class="tick" style="left:${((1-mkt)*100).toFixed(1)}%"></div>`:""}</div>`:""}
+      <div class="legend"><span>Line: <b>${spreadText(g,sp)}</b></span><span>${ouText(g)}</span><span>${wpLabel}</span></div>
+      <div class="lean none">${sp!=null?`Book says ${sp<0?g.home:g.away} by ${Math.abs(sp).toFixed(1)}${cover}`:"Enter a spread below"}. Once final, this game feeds the Week ${CUR} ratings for ${g.home} and ${g.away}.</div>
+      <div class="detail">
+        ${g.live ? `<table><tr><th>This game</th><th>${g.away}</th><th>${g.home}</th></tr>
+          <tr><td>Total yards</td><td>${g.live.yds?.[g.away] ?? "—"}</td><td>${g.live.yds?.[g.home] ?? "—"}</td></tr>
+          <tr><td>Yds / play</td><td>${g.live.ypp?.[g.away]?.toFixed(1) ?? "—"}</td><td>${g.live.ypp?.[g.home]?.toFixed(1) ?? "—"}</td></tr>
+          <tr><td>Turnovers</td><td>${g.live.to?.[g.away] ?? "—"}</td><td>${g.live.to?.[g.home] ?? "—"}</td></tr></table>` : `<div class="note">Live yards, yards per play, and turnovers appear here once the game starts.</div>`}
+        ${payoutTable(g, mkt, sp!=null && sp<0, sp)}
+        <div class="spreadrow"><label for="sp-w1${g.home}${g.away}">${g.home} spread</label>
+          <input id="sp-w1${g.home}${g.away}" type="number" step="0.5" inputmode="decimal" value="${sp ?? ""}"><span class="note">negative = ${g.home} favored</span></div>
+      </div>`;
+    bindCard(card, ev => { const k="w1"+g.home+g.away, v=ev.target.value; if(v==="") delete overrides[k]; else overrides[k]=+v; });
+    wrap.appendChild(card);
+  }
+  let lastDay = null;
+  let slate = bestMode
+    ? week2.map(g => { const e = evaluate(g,w), t = evalTotal(g,w); const best = Math.max(e.pCover ?? 0, t ? Math.max(t.pOver, 1-t.pOver) : 0); return {g, best}; })
+        .filter(x => x.best >= PLAY_MIN && !x.g.final).sort((a,b) => b.best - a.best).map(x => x.g)
+    : week2;
+  slate = slate.filter(inFilter);
+  renderChips();
+  if(!week2.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = live ? `ESPN returned no FBS games for Week ${CUR}.` : "No games loaded yet. This app has no built-in slate — it needs to reach ESPN. Tap Refresh, or check that you're online."; wrap.appendChild(h); }
+  else if(!slate.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = bestMode ? "No plays clear the 54.5% bar in this filter." : "No games match this filter this week."; wrap.appendChild(h); }
+  if(bestMode){ const h = document.createElement("div"); h.className="record"; h.style.display="block"; h.textContent = slate.length ? `${slate.length} plays this week, strongest first` : "No plays clear the 54.5% bar this week"; wrap.appendChild(h); }
+  for(const g of slate){
+    if(g.day !== lastDay){ const h = document.createElement("div"); h.className="day"; h.innerHTML = `${lastDay===null?`Week ${CUR} · `:""}${g.day}`; wrap.appendChild(h); lastDay = g.day; }
+    const e = evaluate(g, w);
+    if(e.ats){ rec[e.ats]++; const gk = gkey(g); if(graded[gk] !== e.ats){ graded[gk] = e.ats; store.set("graded", graded); } }
+    const key = g.home+g.away;
+    const fav = e.pHome >= .5 ? g.home : g.away;
+    const favP = e.pHome >= .5 ? e.pHome : 1-e.pHome;
+    let lean = `<div class="lean none">Enter a spread below to compare</div>`;
+    if(e.market != null){
+      const side = e.pickHome ? g.home : g.away;
+      const num  = e.pickHome ? e.spread : -e.spread;
+      const strong = e.pCover >= PLAY_MIN;
+      let grade = e.ats ? ` <span class="grade ${e.ats}">${e.ats==="P"?"PUSH":e.ats==="W"?"WIN":"LOSS"} · ${g.away} ${g.as}–${g.hs} ${g.home}</span>` : "";
+      if(!e.ats && g.state==="in"){ const cover = (g.hs - g.as) + e.spread; const ok = cover===0 ? null : (cover>0)===e.pickHome;
+        grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
+      const canLog = !g.final && g.state!=="in";
+      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${strong?"":" (pass)"}${strong?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
+    }
+    const t = evalTotal(g, w);
+    if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = pP >= PLAY_MIN;
+      let tg = "";
+      if(g.final){ const d = (g.hs+g.as) - g.ou; const ok = d===0 ? null : (d>0) === (t.pick==="Over"); tg = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"PUSH":ok?"WIN":"LOSS"}</span>`; }
+      else if(g.state==="in"){ tg = ` <span class="grade">${g.hs+g.as} so far</span>`; }
+      const canLogT = !g.final && g.state!=="in";
+      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${tStrong?"":" (pass)"}${tStrong?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
+    const card = document.createElement("div");
+    card.className = "game" + (e.pCover >= PLAY_MIN && !e.ats ? " flag":"") + (open.has(key)?" open":"");
+    card.dataset.key = key; card.tabIndex = 0;
+    const inPlay = g.state==="in";
+    const scoreLine = (inPlay || g.final) ? `<div class="score ${inPlay?"live":""}">
+        <span>${g.poss===g.away?"● ":""}${g.as}</span>
+        <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}` : "FINAL"}</span>
+        <span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : "";
+    const liveWP = inPlay && g.liveWP!=null ? `<div class="livewp">ESPN in-game win prob: ${g.home} ${Math.round(g.liveWP*100)}% · ${g.away} ${Math.round((1-g.liveWP)*100)}%</div>` : "";
+    card.innerHTML = `
+      <div class="top">
+        <div class="team">${g.away}<small>${nameOf(g.away)} · away</small></div>
+        <div class="pct ${fav===g.away?"":"dim"}">${pct(1-e.pHome)}</div>
+        <div class="pct ${fav===g.home?"":"dim"}">${pct(e.pHome)}</div>
+        <div class="team right">${g.home}<small>${nameOf(g.home)} · ${g.neutral?"neutral":"home"}</small></div>
+      </div>
+      ${scoreLine}${liveWP}
+      <div class="bar"><div class="home" style="width:${(e.pHome*100).toFixed(1)}%"></div>${e.pMkt!=null?`<div class="tick" style="left:${((1-e.pMkt)*100).toFixed(1)}%" title="market"></div>`:""}</div>
+      <div class="legend"><span>Line: <b>${spreadText(g,e.spread)}</b>${moveText(g,e)}</span><span>${ouText(g)}</span><span>Blend: <b>${fav} by ${Math.abs(e.blend).toFixed(1)}</b></span></div>
+      ${lean}
+      <div class="detail">
+        <table>
+          <tr><th></th><th>${g.away}</th><th>${g.home}</th></tr>
+          <tr><td>Rating (${gamesPlayed(g.away)}g / ${gamesPlayed(g.home)}g)</td><td>${e.hasRating?fmt(ratings[g.away]):"—"}</td><td>${e.hasRating?fmt(ratings[g.home]):"—"}</td></tr>
+          <tr><td>Last result</td><td>${w1line(g.away)}</td><td>${w1line(g.home)}</td></tr>
+          <tr><td>Avg yds / play</td><td>${statCell("ypp",g.away)}</td><td>${statCell("ypp",g.home)}</td></tr>
+          <tr><td>Avg turnovers</td><td>${statCell("to",g.away)}</td><td>${statCell("to",g.home)}</td></tr>
+          ${g.live ? `<tr><th>This game</th><th></th><th></th></tr>
+          <tr><td>Total yards</td><td>${g.live.yds?.[g.away] ?? "—"}</td><td>${g.live.yds?.[g.home] ?? "—"}</td></tr>
+          <tr><td>Yds / play</td><td>${g.live.ypp?.[g.away]?.toFixed(1) ?? "—"}</td><td>${g.live.ypp?.[g.home]?.toFixed(1) ?? "—"}</td></tr>
+          <tr><td>Turnovers</td><td>${g.live.to?.[g.away] ?? "—"}</td><td>${g.live.to?.[g.home] ?? "—"}</td></tr>` : ""}
+        </table>
+        <table>
+          <tr><td>Model line (home margin)</td><td>${fmt(e.modelLine)}${e.rest.text?` · ${e.rest.text}`:""}</td></tr>
+          ${(e.ih.notes.length||e.ia.notes.length)?`<tr><td>Injuries</td><td>${e.ia.notes.length?`${g.away}: ${e.ia.notes.slice(0,3).join(", ")}${e.ia.notes.length>3?` +${e.ia.notes.length-3}`:""} (−${e.ia.pts.toFixed(1)})`:""}${e.ia.notes.length&&e.ih.notes.length?"<br>":""}${e.ih.notes.length?`${g.home}: ${e.ih.notes.slice(0,3).join(", ")}${e.ih.notes.length>3?` +${e.ih.notes.length-3}`:""} (−${e.ih.pts.toFixed(1)})`:""}</td></tr>`:""}
+          <tr><td>Market line (home margin)</td><td>${e.market==null?"—":fmt(e.market)}</td></tr>
+          <tr><td>Opening line</td><td>${g.open==null?"—":spreadText(g,g.open)}${e.move?` → now ${spreadText(g,e.spread)} (money on ${e.move<0?g.home:g.away})`:""}</td></tr>
+          <tr><td>Blended expected margin</td><td>${fmt(e.blend)}${g.neutral?" · neutral site":""}</td></tr>
+          <tr><td>Market implied win %</td><td>${e.pMkt==null?"—":pct(e.pMkt)+" "+g.home}</td></tr>
+          <tr><td>Moneyline</td><td>${g.away} ${mlText(g.mlA)} · ${g.home} ${mlText(g.mlH)}</td></tr>
+          ${t?`<tr><td>Projected total (stats only)</td><td>${t.model.toFixed(1)} vs O/U ${g.ou}</td></tr>`:""}
+        </table>
+        ${payoutTable(g, e.pHome, e.pickHome, e.spread)}
+        <div class="spreadrow"><label for="sp-${key}">${g.home} spread</label>
+          <input id="sp-${key}" type="number" step="0.5" inputmode="decimal" placeholder="-3.5" value="${overrides[key] ?? (g.spread ?? "")}">
+          <span class="note">negative = ${g.home} favored</span></div>
+        ${!isFBS(g.home)||!isFBS(g.away)?`<div class="note">${!isFBS(g.away)?g.away:g.home} is an FCS team — its rating is a fixed prior, so treat the model line as a guess.</div>`:e.hasRating?"":`<div class="note">One of these teams has no completed game yet, so the model line is home field only.</div>`}
+      </div>`;
+    bindCard(card, ev => { const v = ev.target.value; if(v==="") delete overrides[key]; else overrides[key] = +v; });
+    bindLogs(card, g, e.pHome);
+    wrap.appendChild(card);
+  }
+  const n = rec.W+rec.L+rec.P;
+  const season = {W:0,L:0,P:0}; for(const k in graded){ if(k.startsWith(`${YEAR}-`) && !k.startsWith(`${YEAR}-w${CUR}-`)) season[graded[k]] = (season[graded[k]]||0)+1; }
+  const sN = season.W+season.L+season.P;
+  document.getElementById("record").innerHTML = `Week ${CUR} ATS: <b>${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}</b>${n?"":" · grades as games go final"}` +
+    (sN ? ` &nbsp;·&nbsp; Prior weeks: <b>${season.W}–${season.L}${season.P?"–"+season.P:""}</b>` : "");
+  document.getElementById("wk").textContent = `Week ${CUR}`;
+  document.title = `Saturday Edge — Week ${CUR}`;
+  renderLedger(); renderMovers();
+}
+function renderChips(){
+  const box = document.getElementById("chips"); if(!box) return;
+  const counts = {}; for(const [id] of CHIPS){ const keep = filterMode; filterMode = id; counts[id] = week2.filter(inFilter).length; filterMode = keep; }
+  box.innerHTML = CHIPS.map(([id,label]) => `<button type="button" data-f="${id}" class="${filterMode===id?"on":""}" aria-pressed="${filterMode===id}">${label}${counts[id]?` <span style="opacity:.7">${counts[id]}</span>`:""}</button>`).join("");
+  box.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { filterMode = b.dataset.f; store.set("filter", filterMode); render(); }));
+}
+function moveText(g,e){ if(!e.move) return ""; const toward = e.move<0 ? g.home : g.away;
+  const withYou = e.pickHome != null && ((e.move<0) === e.pickHome);
+  return ` <span class="move ${withYou?"with":"against"}">${withYou?"▲":"▼"} opened ${spreadText(g,g.open).replace(/^\w+ /,"")}</span>`; }
+function bindLogs(card, g, pHome){
+  card.querySelectorAll("[data-log]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation();
+    const t = b.dataset.log, side = b.dataset.side, line = +b.dataset.line, p = +b.dataset.p;
+    const price = t==="ml" ? (side===g.home ? g.mlH : g.mlA) : -110;
+    logBet(g, t, side, t==="ml"?null:line, price, p); }));
+}
+function bindCard(card, onSpread){
+  card.setAttribute("role","button"); card.setAttribute("aria-expanded", card.classList.contains("open"));
+  const toggle = () => { card.classList.toggle("open"); card.setAttribute("aria-expanded", card.classList.contains("open")); };
+  card.addEventListener("click", ev => { if(ev.target.closest(".detail")) return; toggle(); });       // header/bar only
+  card.addEventListener("keydown", ev => { if(ev.target.tagName==="INPUT") return; if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); toggle(); } });
+  card.querySelector("input").addEventListener("input", ev => {
+    const id = ev.target.id; onSpread(ev); render();
+    const again = document.getElementById(id); if(again) again.focus();                                 // re-find after re-render
+  });
+}
+function w1line(t){ const gs = week1.filter(x=>(x.home===t||x.away===t) && x.final).sort((a,b)=>(a.ts||0)-(b.ts||0)); const g = gs[gs.length-1]; if(!g) return "—";
+  const me = g.home===t?g.hs:g.as, them = g.home===t?g.as:g.hs, opp = g.home===t?g.away:g.home;
+  return `${me>them?"W":me<them?"L":"T"} ${me}–${them} ${g.home===t?"vs":"@"} ${opp}`; }
+function statCell(k,t,d=1){ const vs = week1.filter(x=>x.final && (x.home===t||x.away===t)).map(x=>x.stats?.[k]?.[t]).filter(v=>v!=null); return vs.length ? (vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(d) : "—"; }
+
+/* ---------- ESPN fetch ---------- */
+async function j(u){ const ac = new AbortController(); const t = setTimeout(()=>ac.abort(), 8000);
+  try{ const r = await fetch(u,{signal:ac.signal});
+    if(r.status===429 || r.status>=500){ backoff = Math.min(8, backoff*2); throw new Error(r.status); }
+    if(!r.ok) throw new Error(r.status); backoff = 1; return await r.json(); } finally{ clearTimeout(t); } }
+function parseML(comp, side){ const o = comp.odds?.[0]; const v = o?.[side+"TeamOdds"]?.moneyLine ?? o?.moneyline?.[side]?.close?.odds; const n = parseInt(v); return isNaN(n) ? null : n; }
+function parseTotal(comp){ const o = comp.odds?.[0]; const v = o?.overUnder ?? o?.total?.over?.close?.line; const n = parseFloat(v); return isNaN(n) ? null : n; }
+function parseSpread(comp, home, away){
+  const o = comp.odds?.[0]; if(!o) return null;
+  const ln = o.pointSpread?.home?.close?.line ?? o.pointSpread?.home?.open?.line;
+  if(ln != null && !isNaN(parseFloat(ln))) return parseFloat(ln);
+  if(o.details){ const m = o.details.match(/([A-Z][A-Z0-9&'\-]{1,6})\s*([+-]?\d+(?:\.\d+)?)/); if(m){ const t = norm(m[1]), n = +m[2]; if(t===home) return n; if(t===away) return -n; } if(/EVEN|PK/i.test(o.details)) return 0; }
+  return typeof o.spread==="number" ? o.spread : null;
+}
+async function fetchBox(eventId, cache=false){
+  if(cache && boxCache[eventId]) return boxCache[eventId];
+  const sum = await j(`${ESPN}/summary?event=${eventId}`);
+  const st = {ypp:{}, to:{}, yds:{}};
+  for(const t of sum.boxscore?.teams||[]){
+    const ab = norm(t.team.abbreviation); const get = n => t.statistics?.find(s=>s.name===n)?.displayValue;
+    let y = parseFloat(get("yardsPerPlay"));
+    if(isNaN(y)){ const yd = parseFloat(get("totalYards")); let pl = parseFloat(get("totalOffensivePlays"));
+      if(isNaN(pl)){ const ra = parseFloat(get("rushingAttempts")), pa = parseFloat((get("completionAttempts")||"").split(/[-\/]/)[1]);   // college box scores list "C-A", not plays
+        if(!isNaN(ra) && !isNaN(pa)) pl = ra + pa; }
+      if(yd && pl) y = yd/pl; }
+    if(!isNaN(y)) st.ypp[ab] = y;
+    const tv = parseFloat(get("turnovers")); if(!isNaN(tv)) st.to[ab] = tv;
+    const yd = parseFloat(get("totalYards")); if(!isNaN(yd)) st.yds[ab] = yd;
+  }
+  const ok = Object.keys(st.ypp).length===2 ? st : null;
+  if(cache && ok){ boxCache[eventId] = ok; store.set("box", boxCache); }
+  return ok;
+}
+async function loadInjuries(){
+  try{
+    const r = await j(`${ESPN}/injuries`);
+    const out = {};
+    for(const team of r.injuries || []){
+      const ab = teamIds[team.id] || norm(team.abbreviation || "");
+      if(!ab) continue;
+      out[ab] = (team.injuries || []).map(i => ({name: i.athlete?.displayName || i.athlete?.shortName || "?", pos: i.athlete?.position?.abbreviation || "", status: i.status || i.type?.description || ""}));
+    }
+    if(Object.keys(out).length) injuries = out;
+  }catch(_){}
+}
+async function loadTeams(){                        // the FBS roster: who counts as FBS, plus display names
+  try{ const r = await j(`${ESPN}/teams?${FBS_Q}`);
+    const list = r.sports?.[0]?.leagues?.[0]?.teams || []; if(!list.length) return;
+    const set = new Set();
+    for(const {team:t} of list){ const ab = norm(t.abbreviation); set.add(ab); teamIds[t.id] = ab;
+      names[ab] = {...(names[ab]||{}), short: t.shortDisplayName || t.location || t.displayName, full: t.displayName}; }
+    fbs = set; store.set("fbs", [...set]); store.set("names", names);
+  }catch(_){}
+}
+function noteTeam(x){                               // from a scoreboard competitor: name, conference, AP rank
+  const ab = norm(x.team.abbreviation); teamIds[x.team.id] = ab;
+  names[ab] = {...(names[ab]||{}), short: x.team.shortDisplayName || x.team.location || x.team.displayName, full: x.team.displayName, conf: x.team.conferenceId ?? names[ab]?.conf ?? null};
+  const rk = +x.curatedRank?.current; if(rk && rk <= 25) rank[ab] = rk; else if(rk) delete rank[ab];
+  return ab;
+}
+async function detectWeek(){
+  const sb = await j(`${ESPN}/scoreboard?${FBS_Q}`);
+  YEAR = sb.season?.year ?? YEAR; let wk = sb.week?.number ?? CUR;
+  const evs = sb.events || [];
+  const pending = evs.filter(ev => !ev.status?.type?.completed).sort((a,b) => new Date(a.date) - new Date(b.date));
+  if(pending.length) wk = pending[0].week?.number ?? wk;                    // the week of the next game still to be played
+  else if(evs.length) wk += 1;                                              // whole slate final → look at next week
+  CUR = Math.max(1, Math.min(MAX_WEEK, wk));
+}
+async function pool(tasks, n = 8, onEach = null){ const out = []; let i = 0, done = 0; await Promise.all(Array.from({length:Math.min(n,tasks.length)}, async () => { while(i < tasks.length){ const k = i++; try{ out[k] = await tasks[k](); }catch(_){ out[k] = null; } done++; if(onEach) onEach(done, tasks.length); } })); return out; }
+async function loadWeek1(){                       // every game before the current week; returns the box-score jobs so the caller can run them after a first paint
+  const games1 = [], boxJobs = [];
+  const boards = await Promise.all(Array.from({length:Math.max(0,CUR-1)}, (_,i) => j(`${ESPN}/scoreboard?seasontype=2&week=${i+1}&dates=${YEAR}&${FBS_Q}`)));
+  boards.forEach((sb1, i) => { const wk = i+1;
+    for(const ev of sb1.events||[]){
+      const c = ev.competitions[0]; const h = c.competitors.find(x=>x.homeAway==="home"), a = c.competitors.find(x=>x.homeAway==="away");
+      if(!h || !a) continue;
+      const d = new Date(ev.date), state = ev.status?.type?.state, sit = c.situation || {};
+      const home = noteTeam(h), away = noteTeam(a);
+      const prev = week1.find(x=>x.home===home && x.away===away && x.week===wk);
+      const g = {week:wk, home, away, hs:+h.score, as:+a.score, final:!!ev.status?.type?.completed, state, ts:+d, neutral: !!c.neutralSite,
+        day:d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
+        time:d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}),
+        clock: ev.status?.type?.shortDetail || "",
+        poss: sit.possession ? (sit.possession===h.id ? home : sit.possession===a.id ? away : null) : null,
+        down: sit.downDistanceText || sit.shortDownDistanceText || "",
+        liveWP: sit.lastPlay?.probability?.homeWinPercentage ?? null,
+        spread: parseSpread(c, home, away) ?? prev?.spread ?? null, ou: parseTotal(c) ?? prev?.ou ?? null, mlH: parseML(c,"home") ?? prev?.mlH ?? null, mlA: parseML(c,"away") ?? prev?.mlA ?? null,
+        stats: prev?.stats || null, live: prev?.live || null};
+      registerOpen(g);
+      if(g.final && !g.stats){ if(boxCache[ev.id]) g.stats = boxCache[ev.id]; else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true); }); }
+      else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); }); }
+      games1.push(g);
+    }
+  });
+  if(games1.length) week1 = games1;
+  store.set("names", names);
+  return boxJobs;
+}
+async function loadWeek1All(){ const jobs = await loadWeek1(); await pool(jobs); }
+async function loadWeek2(){
+  const sb2 = await j(`${ESPN}/scoreboard?seasontype=2&week=${CUR}&dates=${YEAR}&${FBS_Q}`);
+  const games2 = [], liveJobs = [];
+  for(const ev of sb2.events||[]){
+    const c = ev.competitions[0]; const h = c.competitors.find(x=>x.homeAway==="home"), a = c.competitors.find(x=>x.homeAway==="away");
+    if(!h || !a) continue;
+    const d = new Date(ev.date); const home = noteTeam(h), away = noteTeam(a);
+    const state = ev.status?.type?.state;                       // "pre" | "in" | "post"
+    const sit = c.situation || {};
+    const prev = week2.find(x=>x.home===home && x.away===away);
+    const g = {week:CUR, home, away, neutral: !!c.neutralSite,
+      day:d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
+      time:d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}),
+      spread: parseSpread(c, home, away) ?? prev?.spread ?? null,   // keep the last line seen if ESPN drops it at kickoff
+      ou: parseTotal(c) ?? prev?.ou ?? null, mlH: parseML(c,"home") ?? prev?.mlH ?? null, mlA: parseML(c,"away") ?? prev?.mlA ?? null,
+      ts:+d, state, final: state==="post" && !!ev.status?.type?.completed, hs:+h.score, as:+a.score,
+      clock: ev.status?.type?.shortDetail || "",
+      poss: sit.possession ? (sit.possession===h.id ? home : sit.possession===a.id ? away : null) : null,
+      down: sit.downDistanceText || sit.shortDownDistanceText || "",
+      liveWP: sit.lastPlay?.probability?.homeWinPercentage ?? null,
+      live: prev?.live || null};
+    registerOpen(g);
+    if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); });
+    else if(g.final){ if(boxCache[ev.id]) g.live = boxCache[ev.id]; else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true); }); }
+    games2.push(g);
+  }
+  await pool(liveJobs);
+  games2.sort((x,y)=>x.ts-y.ts);
+  if(games2.length) week2 = games2;
+  store.set("names", names);
+}
+function lineAlerts(){
+  const box = document.getElementById("alerts"); if(!box) return;
+  const crosses = (a,b) => [3,7].some(k => (Math.abs(a) < k) !== (Math.abs(b) < k) || (Math.abs(a) === k) !== (Math.abs(b) === k));
+  const items = [];
+  for(const g of week2){ const k = gkey(g); const was = lastSeen[k];
+    if(was != null && g.spread != null && Math.abs(g.spread - was) >= 0.5){
+      const e = evaluate(g, +document.getElementById("w").value/100), toward = g.spread < was ? g.home : g.away;
+      const withYou = e.pickHome != null && ((g.spread < was) === e.pickHome);
+      items.push(`<b>${g.away} @ ${g.home}</b>: ${spreadText(g,was)} → ${spreadText(g,g.spread)}${crosses(was,g.spread)?" <b>(crossed a key number)</b>":""} — money on ${toward}${e.pickHome!=null?`, ${withYou?"with":"against"} your pick`:""}`);
+    }
+    if(g.spread != null) lastSeen[k] = g.spread; }
+  store.set("lastSeen", lastSeen);
+  box.innerHTML = items.length ? `<div class="alert">Lines moved since your last visit:<br>${items.join("<br>")}</div>` : "";
+}
+function setStatus(extra = ""){
+  const st = document.getElementById("status");
+  const inPlay = week1.filter(g=>g.state==="in").length + week2.filter(g=>g.state==="in").length, finals = week2.filter(g=>g.final).length;
+  const t = new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  st.innerHTML = `<b>${inPlay ? `● ${inPlay} live` : "Live from ESPN"}</b><br>${finals}/${week2.length} Wk ${CUR} finals · ${week1.filter(g=>g.final).length} games rated${extra?`<br>${extra}`:`<br>updated ${t}`}`;
+}
+async function loadLive(){
+  document.getElementById("status").innerHTML = "Fetching from ESPN…";
+  await loadTeams(); await detectWeek();
+  const boxJobs = await loadWeek1(); await loadWeek2(); live = true;
+  ratings = buildRatings(); backtest(); setStatus(boxJobs.length ? `fetching ${boxJobs.length} box scores…` : ""); render(); lineAlerts();   // first paint from margins alone
+  if(boxJobs.length){                              // then fill in yards-per-play and turnovers; ratings sharpen when it's done
+    await pool(boxJobs, 8, (d,n) => { if(d % 10 === 0 || d === n) setStatus(`box scores ${d}/${n}…`); });
+    store.set("box", boxCache);
+  }
+  await loadInjuries(); setStatus();
+}
+/* poll the Week 2 board while games are in progress (or about to kick off) */
+let pollTimer = null;
+function schedulePoll(){
+  clearTimeout(pollTimer);
+  if(!live) return;
+  const now = Date.now();
+  const isActive = g => g.state==="in" || (g.state==="pre" && g.ts - now < 15*60*1000 && g.ts - now > -4*3600*1000);
+  const w1Active = week1.some(g => !g.final && isActive(g)), w2Active = week2.some(isActive);
+  if(!w1Active && !w2Active) return;
+  pollTimer = setTimeout(async () => {
+    if(document.visibilityState==="visible"){ try{
+      if(w1Active){ await loadWeek1All(); backtest(); ratings = buildRatings(); }
+      if(w2Active) await loadWeek2();
+      setStatus(); render(); }catch(_){} }
+    schedulePoll();
+  }, 60000 * backoff);
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible" && live){ Promise.all([week1.some(g=>!g.final)?loadWeek1All():null, loadWeek2()]).then(()=>{backtest();ratings=buildRatings();setStatus();render();}).catch(()=>{}); schedulePoll(); } });
+async function init(){
+  week2.forEach(registerOpen); week1.forEach(registerOpen);
+  ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
+  try{ await loadLive(); }
+  catch(err){ document.getElementById("status").innerHTML = `<b>Couldn't reach ESPN</b><br>${week2.length ? "showing the last slate loaded" : "no games loaded"}<br>tap Refresh to retry`; }
+  backtest(); ratings = buildRatings(); render(); schedulePoll();
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x===b));
+  document.getElementById("w").value = b.dataset.w; document.getElementById("w").dataset.auto = b.id==="autoBtn" ? "1" : "0"; render();
+}));
+document.getElementById("refresh").addEventListener("click", init);
+document.getElementById("share").addEventListener("click", sharePicks);
+document.getElementById("best").addEventListener("click", ev => { bestMode = !bestMode; ev.target.setAttribute("aria-pressed", bestMode); ev.target.classList.toggle("primary", bestMode); document.getElementById("games").classList.toggle("best", bestMode); render(); });
+document.getElementById("recap").addEventListener("click", () => sharePicks(true));
+async function sharePicks(recap = false){
+  const w = +document.getElementById("w").value/100;
+  const rows = week2.filter(inFilter).map(g => ({g, e:evaluate(g,w)})).filter(x => x.e.market!=null).sort((a,b) => Math.abs(b.e.edge) - Math.abs(a.e.edge));
+  const line = ({g,e}) => { const side = e.pickHome ? g.home : g.away, num = e.pickHome ? e.spread : -e.spread;
+    return { pick:`${side} ${num>0?"+":""}${num.toFixed(1)}`, game:`${g.away} @ ${g.home}`, edge:Math.abs(e.edge).toFixed(1),
+      prob: pct(e.pickHome ? e.pHome : 1-e.pHome), strong: e.pCover >= PLAY_MIN, cover: pct(e.pCover),
+      res: e.ats ? (e.ats==="W"?"✓":e.ats==="L"?"✗":"push") : g.state==="in" ? "live" : "",
+      tot: (() => { const t = evalTotal(g,w); return t ? `${t.pick.toLowerCase()[0]}${g.ou}` : ""; })() }; };
+  let L = rows.map(line);
+  if(recap){ L = L.filter(x => x.res && x.res!=="live"); L.sort((a,b) => (a.res==="✓"?0:1) - (b.res==="✓"?0:1) || b.edge - a.edge); }
+  else { L = [...L.filter(x => x.strong), ...L.filter(x => !x.strong)]; }        // plays first — a 60-game slate won't fit one image
+  const total = L.length; L = L.slice(0, SHARE_MAX);
+  const chipLabel = CHIPS.find(c => c[0]===filterMode)?.[1] || "All FBS";
+  gradeBets(); const wk = bets.filter(b => b.week === CUR && b.result); const wkPL = wk.reduce((a,b)=>a+b.profit,0);
+  const recW = L.filter(x=>x.res==="✓").length, recL = L.filter(x=>x.res==="✗").length;
+  const text = `Saturday Edge — Week ${CUR} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
+  try{ await document.fonts.ready; }catch(_){}
+  const W = 1080, rowH = 62, top = 230, H = top + L.length*rowH + 90;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
+  c.fillStyle = "#F5F4EE"; c.fillRect(0,0,W,H);
+  c.fillStyle = "#17263A"; c.fillRect(0,0,W,150);
+  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${CUR} RECAP` : "SATURDAY EDGE", 48, 92);
+  c.font = "500 30px Barlow, sans-serif"; c.fillText(recap ? `Model picks ${recW}–${recL} ATS${wk.length?` · logged bets ${wkPL>=0?"+":"−"}$${Math.abs(wkPL).toFixed(0)} on ${wk.length} bet${wk.length>1?"s":""}`:""}` : `Week ${CUR} · ${chipLabel} · ${total > L.length ? `top ${L.length} of ${total} · ` : ""}${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`, 48, 132);
+  c.fillStyle = "#5B6778"; c.font = "600 24px Barlow, sans-serif"; c.fillText("PICK", 48, top-24); c.fillText("GAME", 400, top-24); c.fillText("WIN %", 640, top-24); c.fillText("COVER", 780, top-24); c.fillText("TOTAL", 900, top-24);
+  L.forEach((x,i) => { const y = top + i*rowH;
+    if(i%2) { c.fillStyle = "#ECEBE3"; c.fillRect(24, y-40, W-48, rowH); }
+    c.fillStyle = x.strong ? "#17263A" : "#5B6778"; c.font = `${x.strong?"800":"600"} 40px 'Barlow Condensed', Impact, sans-serif`; c.fillText(x.pick, 48, y);
+    c.fillStyle = "#5B6778"; c.font = "500 28px Barlow, sans-serif"; c.fillText(x.game, 400, y); c.fillText(x.prob, 640, y); c.fillText(x.tot, 900, y);
+    c.fillStyle = x.strong ? "#D9532B" : "#5B6778"; c.font = "700 32px 'Barlow Condensed', Impact, sans-serif"; c.fillText(x.cover, 780, y);
+    if(x.res){ c.fillStyle = x.res==="✓" ? "#2E7D4F" : x.res==="✗" ? "#D9532B" : "#5B6778"; c.font = "700 30px Barlow, sans-serif"; c.fillText(x.res, 1000, y); } });
+  c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = cover chance ≥ ${Math.round(PLAY_MIN*100)}%. Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
+  const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+  const file = new File([blob], `saturday-edge-week${CUR}${recap?"-recap":""}.png`, {type:"image/png"});
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:`Week ${CUR} picks`, text}); return; }
+    if(navigator.share){ await navigator.share({title:`Week ${CUR} picks`, text}); return; }
+  }catch(err){ if(err?.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(text); }catch(_){}
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+}
+document.getElementById("stake").addEventListener("input", () => { render(); document.getElementById("stake").focus(); });
+document.getElementById("bank").addEventListener("input", () => { store.set("bank", bankroll()); render(); document.getElementById("bank").focus(); });
+document.getElementById("bank").value = store.get("bank", 1000);
+document.getElementById("toggleAll").addEventListener("click", ev => { const all = [...document.querySelectorAll(".game")]; const anyClosed = all.some(c=>!c.classList.contains("open")); all.forEach(c=>c.classList.toggle("open", anyClosed)); ev.target.textContent = anyClosed?"Collapse all":"Expand all"; });
+init();
+</script>
+</body>
+</html>
