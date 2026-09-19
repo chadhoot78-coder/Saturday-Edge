@@ -48,6 +48,8 @@
   button.primary{background:var(--ink);color:var(--chalk)}
   button:focus-visible,input:focus-visible,.game:focus-visible{outline:3px solid var(--away);outline-offset:2px}
   .hint{font-size:13px;color:var(--ink-2);margin-top:8px}
+  .auth{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)} .auth input{width:100%;font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:var(--r);margin-top:6px;background:var(--card)}
+  .auth .who{font-size:13px;color:var(--ink-2)} .auth .who b{color:var(--ink)} .auth .btns{margin-top:8px}
   .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .chips button{white-space:nowrap;padding:6px 11px;font-size:13px;border-color:var(--line);color:var(--ink-2);flex:0 0 auto}
   .chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -135,6 +137,7 @@
 </style>
 <!-- Vercel Web Analytics: page views only, no cookies; does nothing until Analytics is enabled on the project -->
 <script defer src="/_vercel/insights/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="wrap">
@@ -162,6 +165,7 @@
       <button id="recap">Recap</button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
+    <div class="auth" id="auth"></div>
     <div class="hint" id="hint">Gold = away, green = home. The dark tick is where the betting line puts it. Tap a game for the numbers.</div>
   </section>
 
@@ -172,7 +176,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v1.9</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v2.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -202,10 +206,56 @@ let CUR = Math.max(1, Math.min(16, 1 + Math.floor((Date.now() - WEEK1_SUNDAY) / 
 const HFA = 2.5, SD = 16, LEAN_MIN = 1.5, MARGIN_CAP = 35, FCS_R = -22, MAX_WEEK = 16, SHARE_MAX = 18;
 const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
 const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
-                set(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
+                set(k,v){ this.local(k,v); if(SYNC_KEYS.includes(k)) cloud.put(k,v); },
+                local(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
+/* ---------- accounts & cross-device sync (Supabase) ----------
+   Paste your project's URL and anon key from Supabase → Project Settings → API Keys. The anon key is meant to ship in the page: row-level
+   security on the user_state table (see supabase-setup.sql) means a signed-in user can only read and write their own rows. Leave both
+   blank and the app runs device-only, exactly as before. */
+const SUPA_URL = "", SUPA_KEY = "", APP_ID = "se";
+const SYNC_KEYS = ["bets","betsDeleted","picks","graded","lines","openers","overrides","bank"];   // what follows the account; caches stay on the device
+const cloud = { db:null, user:null, timers:{}, msg:"",
+  ready(){ return !!(SUPA_URL && SUPA_KEY && window.supabase); },
+  async init(){ if(!this.ready()) return; this.db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const { data:{ session } } = await this.db.auth.getSession(); this.user = session?.user || null;
+    this.db.auth.onAuthStateChange((_e, sess) => { const u = sess?.user || null; if(u?.id !== this.user?.id){ this.user = u; this.msg = ""; renderAuth(); if(u) this.load(); } });
+    renderAuth(); if(this.user) await this.load(); },
+  merge(k, local, remote){                        // union, so nothing either device knows is lost; the cloud copy wins an outright conflict
+    if(remote === undefined) return local; if(local == null) return remote;
+    if(k === "bets"){ const ids = new Set(local.map(b => b.id)); return [...local, ...remote.filter(b => !ids.has(b.id))].sort((a,b) => a.ts - b.ts); }
+    if(k === "betsDeleted") return [...new Set([...local, ...remote])];
+    if(Array.isArray(remote) || typeof remote !== "object") return remote;
+    return {...local, ...remote}; },
+  async load(){ if(!this.user) return;
+    const { data, error } = await this.db.from("user_state").select("key,value").eq("app", APP_ID);
+    if(error){ this.msg = "Sync failed: " + error.message; renderAuth(); return; }
+    const remote = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
+    for(const k of SYNC_KEYS){ const merged = this.merge(k, store.get(k, null), remote[k]); if(merged == null) continue;
+      store.local(k, merged); if(JSON.stringify(merged) !== JSON.stringify(remote[k])) this.put(k, merged); }
+    reloadState(); this.msg = "Synced " + new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); renderAuth(); },
+  put(k, v){ if(!this.user) return; clearTimeout(this.timers[k]);
+    this.timers[k] = setTimeout(async () => { const { error } = await this.db.from("user_state").upsert({user_id:this.user.id, app:APP_ID, key:k, value:v, updated_at:new Date().toISOString()}, {onConflict:"user_id,app,key"});
+      if(error){ this.msg = "Sync failed: " + error.message; renderAuth(); } }, 600); },
+  async signIn(email, pw){ const { error } = await this.db.auth.signInWithPassword({email, password:pw}); this.msg = error ? error.message : ""; renderAuth(); },
+  async signUp(email, pw){ const { data, error } = await this.db.auth.signUp({email, password:pw}); this.msg = error ? error.message : (data?.session ? "" : "Check your email to confirm the account, then sign in."); renderAuth(); },
+  async signOut(){ await this.db.auth.signOut(); this.user = null; this.msg = ""; renderAuth(); }
+};
+function reloadState(){                           // pull the merged state back into the live variables and redraw
+  betsDeleted = store.get("betsDeleted", []); bets = store.get("bets", []).filter(b => !betsDeleted.includes(b.id));
+  picks = store.get("picks", {}); graded = store.get("graded", {}); lines = store.get("lines", {}); openers = store.get("openers", {}); overrides = store.get("overrides", {});
+  document.getElementById("bank").value = store.get("bank", 1000);
+  [...week1, ...week2].forEach(g => { rememberLines(g); registerOpen(g); }); render(); }
+function renderAuth(){ const box = document.getElementById("auth"); if(!box) return; if(!cloud.ready()){ box.innerHTML = ""; return; }
+  const note = cloud.msg ? `<div class="note">${cloud.msg}</div>` : "";
+  if(cloud.user){ box.innerHTML = `<div class="who">Signed in as <b>${cloud.user.email}</b> · picks and bets follow you to every device</div><div class="btns"><button id="signout">Sign out</button></div>${note}`;
+    box.querySelector("#signout").onclick = () => cloud.signOut(); return; }
+  box.innerHTML = `<div class="who">Sign in to keep your picks and bet log on every device.</div><input id="authEmail" type="email" placeholder="email" autocomplete="username"><input id="authPw" type="password" placeholder="password (8+ characters)" autocomplete="current-password"><div class="btns"><button class="primary" id="signin">Sign in</button><button id="signup">Create account</button></div>${note}`;
+  const em = () => box.querySelector("#authEmail").value.trim(), pw = () => box.querySelector("#authPw").value;
+  box.querySelector("#signin").onclick = () => cloud.signIn(em(), pw()); box.querySelector("#signup").onclick = () => cloud.signUp(em(), pw());
+  box.querySelector("#authPw").addEventListener("keydown", e => { if(e.key === "Enter") cloud.signIn(em(), pw()); }); }
 let K_SHRINK = store.get("k", 2.33);                              // games-played shrink: n/(n+K) → 30% at 1 game, 63% at 4, 81% at 10
 let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {}), picks = store.get("picks", {});   // picks: side + line frozen at kickoff
-let bets = store.get("bets", []), lastSeen = store.get("lastSeen", {}), lines = store.get("lines", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
+let betsDeleted = store.get("betsDeleted", []), bets = store.get("bets", []).filter(b => !betsDeleted.includes(b.id)), lastSeen = store.get("lastSeen", {}), lines = store.get("lines", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
 let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", [])), filterMode = store.get("filter", "all");
 const saveBets = () => store.set("bets", bets);
 const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
@@ -468,7 +518,7 @@ function renderLedger(){
     <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${bets.slice().reverse().map(row).join("")}</table></div>
     <p class="note">CLV = closing-line value: how many points better your number was than the line at kickoff. Beating the close consistently is the earliest sign a model is real; a W–L record needs hundreds of bets to say the same thing. 1 unit = your bet-size field.</p>`
     : `<p>No bets logged. Tap <b>Log</b> on a play to record it (side, price, stake, time). The log grades itself, tracks profit in dollars and units, and measures closing-line value.</p>`}`;
-  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { bets = bets.filter(x => String(x.id) !== b.dataset.del); saveBets(); render(); }));
+  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { const id = +b.dataset.del; betsDeleted.push(id); store.set("betsDeleted", betsDeleted); bets = bets.filter(x => x.id !== id); saveBets(); render(); }));
 }
 const blendFor = g => { const w = +document.getElementById("w").value/100; if(g.week === CUR){ return evaluate(g, w).blend; } const sp = overrides["w1"+g.home+g.away] ?? g.spread; return sp==null ? 0 : -sp; };
 const payoutTable = (g, pHome, pickHome, spread) => { const st = stake(); if(!st) return "";
@@ -870,6 +920,7 @@ document.addEventListener("visibilitychange", () => { if(document.visibilityStat
 async function init(){
   week2.forEach(registerOpen); week1.forEach(registerOpen);
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
+  cloud.init().catch(err => { cloud.msg = "Sync unavailable: " + err.message; renderAuth(); });
   try{ await loadLive(); }
   catch(err){ document.getElementById("status").innerHTML = `<b>Couldn't reach ESPN</b><br>${week2.length ? "showing the last slate loaded" : "no games loaded"}<br>tap Refresh to retry`; }
   backtest(); ratings = buildRatings(); render(); schedulePoll();
