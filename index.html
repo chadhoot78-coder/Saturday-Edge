@@ -49,6 +49,9 @@
   .rank{font-weight:700;color:var(--flag)}
   .empty{margin-top:18px;padding:14px;border:1.5px dashed var(--line);border-radius:var(--r);color:var(--ink-2);font-size:14px}
 
+  .kick{font-family:"Barlow",sans-serif;font-size:12.5px;color:var(--ink-2);margin:2px 0 6px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .kick b{font-weight:600;color:var(--ink)}
+  .kick .tv{font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;border:1.5px solid var(--line);border-radius:6px;padding:1px 6px;white-space:nowrap}
   .day{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;margin:22px 0 8px;display:flex;align-items:baseline;gap:8px}
   .day span{font-family:"Barlow",sans-serif;font-weight:400;font-size:13px;color:var(--ink-2)}
 
@@ -143,7 +146,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v1.4</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v1.5</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -549,8 +552,9 @@ function render(){
     const inPlay = g.state==="in";
     const scoreLine = (inPlay || g.final) ? `<div class="score ${inPlay?"live":""}">
         <span>${g.poss===g.away?"● ":""}${g.as}</span>
-        <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}` : "FINAL"}</span>
+        <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}${g.tv?` · ${g.tv}`:""}` : "FINAL"}</span>
         <span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : "";
+    const kick = (!inPlay && !g.final) ? `<div class="kick"><span>${g.day.split(",")[0]} <b>${g.time}</b>${g.neutral?" · neutral site":""}</span>${g.tv?`<span class="tv">${g.tv}</span>`:""}</div>` : "";
     const liveWP = inPlay && g.liveWP!=null ? `<div class="livewp">ESPN in-game win prob: ${g.home} ${Math.round(g.liveWP*100)}% · ${g.away} ${Math.round((1-g.liveWP)*100)}%</div>` : "";
     card.innerHTML = `
       <div class="top">
@@ -559,7 +563,7 @@ function render(){
         <div class="pct ${fav===g.home?"":"dim"}">${pct(e.pHome)}</div>
         <div class="team right">${g.home}<small>${nameOf(g.home)} · ${g.neutral?"neutral":"home"}</small></div>
       </div>
-      ${scoreLine}${liveWP}
+      ${kick}${scoreLine}${liveWP}
       <div class="bar"><div class="home" style="width:${(e.pHome*100).toFixed(1)}%"></div>${e.pMkt!=null?`<div class="tick" style="left:${((1-e.pMkt)*100).toFixed(1)}%" title="market"></div>`:""}</div>
       <div class="legend"><span>Line: <b>${spreadText(g,e.spread)}</b>${moveText(g,e)}</span><span>${ouText(g)}</span><span>Blend: <b>${fav} by ${Math.abs(e.blend).toFixed(1)}</b></span></div>
       ${lean}
@@ -695,6 +699,14 @@ function noteTeam(x){                               // from a scoreboard competi
   const rk = +x.curatedRank?.current; if(rk && rk <= 25) rank[ab] = rk; else if(rk) delete rank[ab];
   return ab;
 }
+function tvOf(c){                                   // national TV first, then whatever ESPN lists (SEC Network+, ESPN+ streams, regional)
+  const geo = (c.geoBroadcasts||[]).filter(b => b.media?.shortName);
+  const nat = geo.filter(b => /national/i.test(b.market?.type||"") && /tv/i.test(b.type?.shortName||"")).map(b => b.media.shortName);
+  const any = geo.map(b => b.media.shortName);
+  const names = (c.broadcasts||[]).flatMap(b => b.names||[]);
+  return [...new Set([...nat, ...names, ...any])].slice(0,2).join(" / ");
+}
+const kickTime = (c, d) => c.timeValid === false ? "TBD" : d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 async function detectWeek(){
   const sb = await j(`${ESPN}/scoreboard?${FBS_Q}`);
   YEAR = sb.season?.year ?? YEAR; let wk = sb.week?.number ?? CUR;
@@ -717,7 +729,7 @@ async function loadWeek1(){                       // every game before the curre
       const prev = week1.find(x=>x.home===home && x.away===away && x.week===wk);
       const g = {week:wk, home, away, hs:+h.score, as:+a.score, final:!!ev.status?.type?.completed, state, ts:+d, neutral: !!c.neutralSite,
         day:d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
-        time:d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}),
+        time:kickTime(c, d), tv: tvOf(c),
         clock: ev.status?.type?.shortDetail || "",
         poss: sit.possession ? (sit.possession===h.id ? home : sit.possession===a.id ? away : null) : null,
         down: sit.downDistanceText || sit.shortDownDistanceText || "",
@@ -747,7 +759,7 @@ async function loadWeek2(){
     const prev = week2.find(x=>x.home===home && x.away===away);
     const g = {week:CUR, home, away, neutral: !!c.neutralSite,
       day:d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
-      time:d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}),
+      time:kickTime(c, d), tv: tvOf(c),
       spread: parseSpread(c, home, away) ?? prev?.spread ?? null,   // keep the last line seen if ESPN drops it at kickoff
       ou: parseTotal(c) ?? prev?.ou ?? null, mlH: parseML(c,"home") ?? prev?.mlH ?? null, mlA: parseML(c,"away") ?? prev?.mlA ?? null,
       ts:+d, state, final: state==="post" && !!ev.status?.type?.completed, hs:+h.score, as:+a.score,
