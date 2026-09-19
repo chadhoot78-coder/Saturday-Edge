@@ -208,6 +208,7 @@
       <button id="best" aria-pressed="false">Best bets</button>
       <button id="recap">Recap</button>
       <button id="notify" title="Get a notification when a line moves on a play or a logged bet">Alerts: Off</button>
+      <button id="prior" title="What a team is assumed to be before its results say otherwise: the market's rating, or league average (the original model)">Prior: Market</button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
     <div class="chips viewchips" id="viewchips" role="group" aria-label="View options"></div>
@@ -224,13 +225,14 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.1</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
   <section class="method" data-lg="cfb">
     <h2>How the number is built</h2>
     <p><b>Team rating.</b> Every FBS game played this season counts: point margin (home field removed, capped at ±35 so a 70-point rout counts like a 35-point one), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
+    <p><b>The prior.</b> A rating has to start somewhere before a team has played. <b>Prior: Market</b> (the default since v4.1) starts every team at the rating the betting lines imply — solved across all the games on the board, the same way the results model adjusts for opponents — so with no evidence the model line simply <i>is</i> the market line, and the stats only move it where they disagree. <b>Prior: Average</b> is the original behaviour: every team starts at zero, which early in the season makes the model line shorter than the spread in almost every game and leans the picks toward the underdog. The button flips between them instantly, the backtest re-runs, and past grades stay as they were recorded.</p>
     <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest — and, since v3, out of the picks too. A −22 prior against a 55-point line produced "85% to cover" underdogs that lost by 80, so a game with an FCS team shows the market number only: no ATS side, no total play, no stake. The bar and win % on those cards are the market's, not the model's.</p>
     <p><b>Neutral sites &amp; rest.</b> Kickoff classics, rivalry games at neutral venues, and conference title games get no home-field points. The model line gets ±0.3 points per day of rest advantage (byes, Friday games). ESPN injury data is thin for college football, so injuries are applied only when the feed has them.</p>
     <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the venue for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes are skipped.</p>
@@ -248,6 +250,7 @@
   <section class="method" data-lg="nfl">
     <h2>How the number is built</h2>
     <p><b>Team rating.</b> Every game played this season counts: point margin (home-field removed), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
+    <p><b>The prior.</b> A rating has to start somewhere before a team has played. <b>Prior: Market</b> (the default since v4.1) starts every team at the rating the betting lines imply — solved across all the games on the board, the same way the results model adjusts for opponents — so with no evidence the model line simply <i>is</i> the market line, and the stats only move it where they disagree. <b>Prior: Average</b> is the original behaviour: every team starts at zero, which early in the season makes the model line shorter than the spread in almost every game and leans the picks toward the underdog. The button flips between them instantly, the backtest re-runs, and past grades stay as they were recorded.</p>
     <p><b>Rest &amp; injuries.</b> The model line gets ±0.3 points per day of rest advantage (short weeks, byes), and a penalty for players listed Out or Doubtful on ESPN's injury report — about 4 points for a quarterback, half a point for other starters, capped at 6. These only touch the stats side; the market already prices them. International games at neutral sites get no home-field points.</p>
     <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the stadium for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes and retractables ESPN marks indoor are skipped.</p>
     <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off. Until then the log shows how far the line has moved from your number; once the game is on it shows whether the bet is covering and by how much, live.</p>
@@ -369,7 +372,7 @@ let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", []
 let viewOpts = store.get("view", {plays:false, hideFinals:false}), future = {}, geo = store.get("geo", {}), notifyOn = store.get("notify", false), alerted = store.get("alerted", {});
 const ratingCache = {};                              // week -> ratings built from only the weeks before it (for viewing past weeks honestly)
 const ratingsFor = wk => { if(wk == null || wk >= CUR) return ratings;
-  const key = `${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
+  const key = `${PRIOR}|${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
   return ratingCache[key] ||= buildRatings(week1.filter(x => x.final && x.week < wk)); };
 const histFor = wk => (wk == null || wk >= CUR) ? week1 : week1.filter(x => x.week < wk);   // what the model knew before that week
 const isFCSGame = g => !NFL && (!isFBS(g.home) || !isFBS(g.away));
@@ -438,8 +441,31 @@ const coverP = (mu, spread) => { const x = -spread; const push = Number.isIntege
 const Phi = z => { const t = 1/(1+0.2316419*Math.abs(z)); const d = 0.3989423*Math.exp(-z*z/2);
   const p = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
 
+/* ---------- the prior: what a team is assumed to be before its results say otherwise ----------
+   "market": each team's rating implied by the betting lines themselves, solved across every game on the board through that week —
+   so a team with no results starts at the market's opinion and the stats only move it off the line with evidence.
+   "average": the original v1–v4 behaviour — every FBS team starts at 0, which in September leans the model toward every underdog. */
+let PRIOR = store.get("prior", "market");
+const mktCache = {};
+function marketRatings(uptoWeek){                    // team -> rating implied by the spreads of games in weeks <= uptoWeek
+  const pool = [...week1, ...week2, ...Object.values(future).flat()].filter(g => g.spread != null && g.week <= uptoWeek);
+  const key = `${uptoWeek}|${pool.length}|${pool.reduce((a,g)=>a+g.spread,0).toFixed(1)}`; if(mktCache[key]) return mktCache[key];
+  const obs = {};
+  for(const g of pool){ const m = -g.spread - (g.neutral ? 0 : HFA);   // the market's expected home margin, home field removed
+    if(isFBS(g.home)) (obs[g.home] ||= []).push({v:m, opp:g.away}); if(isFBS(g.away)) (obs[g.away] ||= []).push({v:-m, opp:g.home}); }
+  let r = {}; for(const t in obs) r[t] = 0;
+  for(let pass = 0; pass < 25; pass++){             // the same opponent-adjust iteration as the results model, with no shrinkage: lines are already opinions
+    const next = {};
+    for(const t in obs) next[t] = obs[t].reduce((a,p) => a + p.v + (r[p.opp] ?? (isFBS(p.opp) ? 0 : FCS_R)), 0) / obs[t].length;
+    const ts = Object.keys(next), mean = ts.reduce((a,t)=>a+next[t],0) / Math.max(1, ts.length);
+    for(const t of ts) next[t] -= mean; r = next;
+  }
+  return mktCache[key] = r;
+}
 function buildRatings(games = week1, K = K_SHRINK){
   const perf = {};                                   // team -> [{v, opp}]
+  const upto = games.length ? Math.max(...games.map(g => g.week)) + 1 : CUR;   // lines through the week being predicted are known before kickoff
+  const mkt = PRIOR === "market" ? marketRatings(Math.min(upto, MAX_WEEK)) : null;
   for(const g of games){
     if(!g.final) continue;
     const m = Math.max(-MARGIN_CAP, Math.min(MARGIN_CAP, g.hs - g.as)), st = g.stats || {};
@@ -449,10 +475,11 @@ function buildRatings(games = week1, K = K_SHRINK){
     (perf[g.home] ||= []).push({v, opp:g.away});
     (perf[g.away] ||= []).push({v:-v, opp:g.home});
   }
-  const target = t => isFBS(t) ? 0 : FCS_R;         // shrink FBS teams toward average, FCS visitors toward an FCS prior
-  let r = {}; for(const t in perf) r[t] = target(t);
+  const target = t => !isFBS(t) ? FCS_R : mkt ? (mkt[t] ?? 0) : 0;   // shrink toward the market's rating (or average), FCS visitors toward the FCS prior
+  let r = {}; if(mkt) for(const t in mkt) r[t] = mkt[t];              // teams with lines but no results carry the market's number
+  for(const t in perf) r[t] = target(t);
   for(let pass = 0; pass < 5; pass++){              // opponent adjustment: credit performance against good teams
-    const next = {};
+    const next = mkt ? {...mkt} : {};
     for(const t in perf){
       const n = perf[t].length;
       const raw = perf[t].reduce((a,p) => a + p.v + (r[p.opp] ?? target(p.opp)), 0) / n;
@@ -945,7 +972,7 @@ function renderSeason(){
   if(!games.length){ box.innerHTML = `<h2>Season so far</h2><p>Records by week and by situation appear once games have gone final.</p>`; return; }
   const rows = games.map(g => { const e = evaluate(g, w); const t = evalTotal(g, w); let tr = null;
     if(t){ const d = (g.hs+g.as) - g.ou; tr = d===0 ? "P" : (d>0)===(t.pick==="Over") ? "W" : "L"; }
-    return {g, e, t, tr, play: (e.pCover ?? 0) >= PLAY_MIN, tPlay: t ? Math.max(t.pOver, 1-t.pOver) >= PLAY_MIN : false}; }).filter(r => r.e.ats && r.e.hasRating);   // like the backtest: only games the model had data for
+    return {g, e, t, tr, play: (e.pCover ?? 0) >= PLAY_MIN, tPlay: t ? Math.max(t.pOver, 1-t.pOver) >= PLAY_MIN : false}; }).filter(r => r.e.ats && r.e.hasRating && r.g.week > 1);   // like the backtest: only games the model had results to work from
   const tally = list => { const r = {W:0,L:0,P:0}; for(const x of list) r[x]++; return r; };
   const rec = r => `${r.W}–${r.L}${r.P?"–"+r.P:""}`;
   const pctW = r => r.W+r.L ? Math.round(100*r.W/(r.W+r.L)) : null;
@@ -957,7 +984,7 @@ function renderSeason(){
   let units = 0; const curve = byWeek.map(x => { units += x.pl.W*100/110 - x.pl.L; return {x:`Wk ${x.wk}`, y:+units.toFixed(2), label:`Week ${x.wk}: plays ${rec(x.pl)} · all picks ${rec(x.r)} · running ${units>=0?"+":""}${units.toFixed(1)}u`, cls: x.pl.W >= x.pl.L ? "W" : "L"}; });
   const plays = rows.filter(r => r.play), tot = rows.filter(r => r.tr), tPlays = tot.filter(r => r.tPlay);
   box.innerHTML = `<h2>Season so far</h2>
-    <p>Every final with a line where both teams had a rating going in — so Week 1 is out, same as the backtest — re-scored the walk-forward way: each week predicted from only the weeks before it, at the current ${Math.round(w*100)}% stats weight (locked pre-kickoff picks are used where this device saw them). Plays are picks that cleared ${Math.round(PLAY_MIN*100)}%; a 52.4% hit rate is break-even at -110.</p>
+    <p>Every final with a line where both teams had a rating going in — so Week 1 is out, same as the backtest — re-scored the walk-forward way: each week predicted from only the weeks before it, at the current ${Math.round(w*100)}% stats weight and the ${PRIOR === "market" ? "market" : "league-average"} prior (locked pre-kickoff picks are used where this device saw them). Plays are picks that cleared ${Math.round(PLAY_MIN*100)}%; a 52.4% hit rate is break-even at -110.</p>
     ${curve.length >= 2 ? lineChart(curve, {zero:true, fmt: v => (v>=0?"+":"")+v.toFixed(0)+"u", title:"Running units on plays, flat 1u each, by week"}) : ""}
     <div class="splits">
       ${split("All picks", rows)}${split("Plays only", plays)}${split("Passes", rows.filter(r => !r.play))}
@@ -1225,6 +1252,10 @@ document.getElementById("notify").addEventListener("click", async () => {
 });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 renderNotify();
+function renderPrior(){ const b = document.getElementById("prior"); if(b){ b.textContent = `Prior: ${PRIOR === "market" ? "Market" : "Average"}`; b.classList.toggle("primary", PRIOR === "market"); } }
+document.getElementById("prior").addEventListener("click", () => { PRIOR = PRIOR === "market" ? "average" : "market"; store.set("prior", PRIOR); renderPrior();
+  ratings = buildRatings(); backtest(); render(); });
+renderPrior();
 function setStatus(extra = ""){
   const st = document.getElementById("status");
   const inPlay = week1.filter(g=>g.state==="in").length + week2.filter(g=>g.state==="in").length, finals = week2.filter(g=>g.final).length;
