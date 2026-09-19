@@ -165,18 +165,28 @@
 
 <script>
 /* ---------- constants ---------- */
-let YEAR = 2026, CUR = 4;                          // season + current week; auto-detected from ESPN when online
+let YEAR = 2026;
+/* ESPN folds Week 0 into Week 1, so Week 1 is the Sat Sep 5 slate, Week 3 = Sep 19, Week 4 = Sep 26. Until ESPN answers,
+   estimate the week from today's date instead of guessing a number. */
+const WEEK1_SUNDAY = new Date(YEAR, 7, 30);        // the Sunday after the Week 0 games; weeks roll over Sunday morning
+let CUR = Math.max(1, Math.min(16, 1 + Math.floor((Date.now() - WEEK1_SUNDAY) / 6048e5)));
 const HFA = 2.5, SD = 16, LEAN_MIN = 1.5, MARGIN_CAP = 35, FCS_R = -22, MAX_WEEK = 16, SHARE_MAX = 18;
 const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
 const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
                 set(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
 let K_SHRINK = store.get("k", 2.33);                              // games-played shrink: n/(n+K) → 30% at 1 game, 63% at 4, 81% at 10
 let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {});
-let bets = store.get("bets", []), lastSeen = store.get("lastSeen", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
+let bets = store.get("bets", []), lastSeen = store.get("lastSeen", {}), lines = store.get("lines", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
 let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", [])), filterMode = store.get("filter", "all");
 const saveBets = () => store.set("bets", bets);
 const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
 function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
+/* ESPN removes the odds from the scoreboard once a game kicks off. Keep the last line seen for every game so finished games
+   still grade against their closing number after a fresh page load — the opener alone isn't enough for that. */
+function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = false;
+  for(const f of ["spread","ou","mlH","mlA"]){ if(g[f] != null && g[f] !== L[f]){ L[f] = g[f]; changed = true; } }
+  if(changed){ lines[k] = L; store.set("lines", lines); }
+  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && L[f] != null) g[f] = L[f]; }
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
 const FBS_Q = "groups=80&limit=300";                              // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
 const isFBS = t => !fbs.size || fbs.has(t);                       // until the team list loads, trust everyone
@@ -195,7 +205,7 @@ const norm = a => a;
 const FALLBACK_W1 = [], FALLBACK_W2 = [];
 
 /* ---------- state ---------- */
-let week1 = FALLBACK_W1, week2 = FALLBACK_W2, ratings = {}, overrides = {}, live = false;
+let week1 = FALLBACK_W1, week2 = FALLBACK_W2, ratings = {}, overrides = store.get("overrides", {}), live = false;   // typed-in spreads survive a reload
 
 /* ---------- math ---------- */
 /* Margins are discrete and pile up a little on 3 and 7. Build an integer distribution from a normal curve, then
@@ -454,6 +464,7 @@ function render(){
 
   const open = new Set([...document.querySelectorAll(".game.open")].map(e=>e.dataset.key));
   const rec = {W:0,L:0,P:0};
+  for(const g of week2){ const e = evaluate(g, w); if(e.ats){ rec[e.ats]++; const gk = gkey(g); if(graded[gk] !== e.ats){ graded[gk] = e.ats; store.set("graded", graded); } } }   // whole slate, whatever the filter
   const wrap = document.getElementById("games"); wrap.innerHTML = "";
   for(const g of week1.filter(x=>!x.final)){
     const h = document.createElement("div"); h.className="day"; h.innerHTML = `Week ${g.week ?? CUR-1} · ${g.day} <span>${g.state==="in"?"in progress":g.time}</span>`; wrap.appendChild(h);
@@ -486,7 +497,7 @@ function render(){
         <div class="spreadrow"><label for="sp-w1${g.home}${g.away}">${g.home} spread</label>
           <input id="sp-w1${g.home}${g.away}" type="number" step="0.5" inputmode="decimal" value="${sp ?? ""}"><span class="note">negative = ${g.home} favored</span></div>
       </div>`;
-    bindCard(card, ev => { const k="w1"+g.home+g.away, v=ev.target.value; if(v==="") delete overrides[k]; else overrides[k]=+v; });
+    bindCard(card, ev => { const k="w1"+g.home+g.away, v=ev.target.value; if(v==="") delete overrides[k]; else overrides[k]=+v; store.set("overrides", overrides); });
     wrap.appendChild(card);
   }
   let lastDay = null;
@@ -502,7 +513,6 @@ function render(){
   for(const g of slate){
     if(g.day !== lastDay){ const h = document.createElement("div"); h.className="day"; h.innerHTML = `${lastDay===null?`Week ${CUR} · `:""}${g.day}`; wrap.appendChild(h); lastDay = g.day; }
     const e = evaluate(g, w);
-    if(e.ats){ rec[e.ats]++; const gk = gkey(g); if(graded[gk] !== e.ats){ graded[gk] = e.ats; store.set("graded", graded); } }
     const key = g.home+g.away;
     const fav = e.pHome >= .5 ? g.home : g.away;
     const favP = e.pHome >= .5 ? e.pHome : 1-e.pHome;
@@ -572,7 +582,7 @@ function render(){
           <span class="note">negative = ${g.home} favored</span></div>
         ${!isFBS(g.home)||!isFBS(g.away)?`<div class="note">${!isFBS(g.away)?g.away:g.home} is an FCS team — its rating is a fixed prior, so treat the model line as a guess.</div>`:e.hasRating?"":`<div class="note">One of these teams has no completed game yet, so the model line is home field only.</div>`}
       </div>`;
-    bindCard(card, ev => { const v = ev.target.value; if(v==="") delete overrides[key]; else overrides[key] = +v; });
+    bindCard(card, ev => { const v = ev.target.value; if(v==="") delete overrides[key]; else overrides[key] = +v; store.set("overrides", overrides); });
     bindLogs(card, g, e.pHome);
     wrap.appendChild(card);
   }
@@ -581,7 +591,8 @@ function render(){
   const sN = season.W+season.L+season.P;
   document.getElementById("record").innerHTML = `Week ${CUR} ATS: <b>${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}</b>${n?"":" · grades as games go final"}` +
     (sN ? ` &nbsp;·&nbsp; Prior weeks: <b>${season.W}–${season.L}${season.P?"–"+season.P:""}</b>` : "");
-  document.getElementById("wk").textContent = `Week ${CUR}`;
+  const days = week2.map(g=>g.ts).filter(Boolean); const md = t => new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  document.getElementById("wk").textContent = `Week ${CUR}` + (days.length ? ` · ${md(Math.min(...days))}${Math.max(...days)-Math.min(...days) > 864e5 ? "–" + md(Math.max(...days)).replace(/^\w+ /,"") : ""}` : "");
   document.title = `Saturday Edge — Week ${CUR}`;
   renderLedger(); renderMovers();
 }
@@ -704,7 +715,7 @@ async function loadWeek1(){                       // every game before the curre
         liveWP: sit.lastPlay?.probability?.homeWinPercentage ?? null,
         spread: parseSpread(c, home, away) ?? prev?.spread ?? null, ou: parseTotal(c) ?? prev?.ou ?? null, mlH: parseML(c,"home") ?? prev?.mlH ?? null, mlA: parseML(c,"away") ?? prev?.mlA ?? null,
         stats: prev?.stats || null, live: prev?.live || null};
-      registerOpen(g);
+      rememberLines(g); registerOpen(g);
       if(g.final && !g.stats){ if(boxCache[ev.id]) g.stats = boxCache[ev.id]; else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true); }); }
       else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); }); }
       games1.push(g);
@@ -736,7 +747,7 @@ async function loadWeek2(){
       down: sit.downDistanceText || sit.shortDownDistanceText || "",
       liveWP: sit.lastPlay?.probability?.homeWinPercentage ?? null,
       live: prev?.live || null};
-    registerOpen(g);
+    rememberLines(g); registerOpen(g);
     if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); });
     else if(g.final){ if(boxCache[ev.id]) g.live = boxCache[ev.id]; else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true); }); }
     games2.push(g);
