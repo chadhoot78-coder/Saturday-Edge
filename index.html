@@ -108,6 +108,25 @@
   .method p{margin-bottom:8px;color:var(--ink-2)}
   .method p b{color:var(--ink)}
   @media (prefers-reduced-motion:no-preference){ .bar .home{transition:width .35s ease} }
+  /* ---------- desktop: sidebar + multi-column slate; the phone layout is unchanged below 900px ---------- */
+  @media (min-width:900px){
+    .wrap{max-width:1500px;padding:0 28px;display:grid;grid-template-columns:300px minmax(0,1fr) minmax(0,1fr);column-gap:26px;align-items:start;
+      grid-template-areas:"head head head" "side alerts alerts" "side record record" "side games games" "side ledger movers" "side learn method" "side disc disc"}
+    .wrap > header{grid-area:head}
+    .wrap > .controls{grid-area:side;position:sticky;top:12px;margin-top:14px;padding:14px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card);max-height:calc(100vh - 24px);overflow:auto}
+    .controls .seg{flex-wrap:wrap} .controls .seg button{flex:1 1 40%}
+    .controls .btns{flex-direction:column;align-items:stretch} .controls .btns button{width:100%;margin:0}
+    .controls .stake{justify-content:space-between} .controls .stake input{width:110px}
+    .controls .chips{flex-wrap:wrap;overflow:visible}
+    .wrap > #alerts{grid-area:alerts} .wrap > .record{grid-area:record;margin-top:10px} .wrap > #games{grid-area:games}
+    .wrap > #ledger{grid-area:ledger} .wrap > #movers{grid-area:movers} .wrap > #learn{grid-area:learn} .wrap > section.method:last-of-type{grid-area:method} .wrap > .disclaimer{grid-area:disc}
+    #games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
+    #games > .day{grid-column:1/-1;margin:16px 0 0} #games > .record,#games > .empty,#games > .alert{grid-column:1/-1}
+    #games > .game{margin-bottom:0} .game:hover{border-color:var(--ink-2)} .game.flag:hover{border-color:var(--flag)}
+    .method{margin-top:24px} .method p{max-width:80ch}
+    .tablewrap table{min-width:0}
+  }
+  @media (min-width:1500px){ #games{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))} }
 </style>
 </head>
 <body>
@@ -146,7 +165,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v1.5</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v1.6</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
