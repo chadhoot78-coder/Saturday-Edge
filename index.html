@@ -22,7 +22,14 @@
     --away:#C9B458;       /* away side (gold) */
     --flag:#D9532B;       /* edge flag */
     --card:#FFFFFF;
+    --with-bg:#E3F0E8; --against-bg:#F8E4DC; --alert-bg:#FFF3E9;
     --r:6px;
+  }
+  /* dark palette: applied by the toggle, or by the OS setting when the toggle is on Auto */
+  :root[data-theme="dark"], :root:not([data-theme="light"]).os-dark{
+    --chalk:#121A26; --line:#2C3A4E; --ink:#ECEFF4; --ink-2:#9FABBD; --turf:#3A9A63; --turf-deep:#6CC08F; --away:#D4BF63; --flag:#F0704A; --card:#1B2635;
+    --with-bg:#1E3A2B; --against-bg:#43261E; --alert-bg:#3A2A1C;
+    color-scheme:dark;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--chalk);color:var(--ink);font-family:"Barlow",system-ui,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
@@ -39,6 +46,7 @@
   .seg{display:flex;gap:6px}
   .seg button{flex:1;padding:10px 4px;font-size:13px;border-color:var(--line);background:var(--card);color:var(--ink-2)}
   .seg button.on{background:var(--turf);border-color:var(--turf);color:#fff}
+  button.primary{color:var(--chalk)}
   .seg button:disabled{opacity:.45;cursor:default}
   #learn tr.best td{font-weight:700;color:var(--turf-deep)}
   .btns{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
@@ -52,7 +60,7 @@
   .auth .who{font-size:13px;color:var(--ink-2)} .auth .who b{color:var(--ink)} .auth .btns{margin-top:8px}
   .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .chips button{white-space:nowrap;padding:6px 11px;font-size:13px;border-color:var(--line);color:var(--ink-2);flex:0 0 auto}
-  .chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chips button.on{background:var(--ink);border-color:var(--ink);color:var(--chalk)}
   .rank{font-weight:700;color:var(--flag)}
   .empty{margin-top:18px;padding:14px;border:1.5px dashed var(--line);border-radius:var(--r);color:var(--ink-2);font-size:14px}
 
@@ -85,7 +93,7 @@
   .legend b{color:var(--ink);font-weight:600}
   .legend span:nth-child(2){text-align:center}
   .move{font-size:11px;font-weight:600;padding:1px 5px;border-radius:3px;margin-left:4px;white-space:nowrap}
-  .move.with{color:var(--turf-deep);background:#E3F0E8} .move.against{color:var(--flag);background:#F8E4DC}
+  .move.with{color:var(--turf-deep);background:var(--with-bg)} .move.against{color:var(--flag);background:var(--against-bg)}
   .lean{margin-top:8px;font-size:14px;font-weight:600;color:var(--flag)}
   .lean.none{color:var(--ink-2);font-weight:400}
 
@@ -102,12 +110,12 @@
 
   .record{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:600;margin-top:16px;color:var(--ink-2)}
   .record b{color:var(--ink);font-weight:800;font-size:24px}
-  .grade{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:3px;font-size:12px;font-weight:700;color:#fff;background:var(--ink-2)}
+  .grade{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:3px;font-size:12px;font-weight:700;color:#fff;background:var(--ink-2)} :root[data-theme="dark"] .grade,:root.os-dark:not([data-theme="light"]) .grade{color:var(--chalk)}
   .grade.W{background:var(--turf)} .grade.L{background:var(--flag)}
   .mini{padding:2px 8px;font-size:12px;border-width:1px;margin-left:6px;vertical-align:middle}
   .ledger-stats{display:flex;flex-wrap:wrap;gap:6px 18px;margin:6px 0 8px;font-size:14px;color:var(--ink-2)} .ledger-stats b{color:var(--ink)} .pos{color:var(--turf-deep)!important} .neg{color:var(--flag)!important}
   .tablewrap{overflow-x:auto} .tablewrap table{min-width:520px}
-  .alert{margin-top:14px;padding:10px 12px;border-radius:var(--r);background:#FFF3E9;border:1.5px solid var(--flag);font-size:14px} .alert b{color:var(--flag)}
+  .alert{margin-top:14px;padding:10px 12px;border-radius:var(--r);background:var(--alert-bg);border:1.5px solid var(--flag);font-size:14px} .alert b{color:var(--flag)}
   .best .day{display:none}
   .disclaimer{margin-top:24px;font-size:13px;color:var(--ink-2)} .disclaimer a{color:var(--ink)}
   .method{margin-top:28px;padding:14px;border:1.5px solid var(--line);border-radius:var(--r);font-size:14px;background:var(--card)}
@@ -160,6 +168,7 @@
       <label class="stake">Bankroll $<input id="bank" type="number" min="0" step="50" value="1000" inputmode="decimal" style="width:84px"></label>
       <button class="primary" id="refresh">Refresh from ESPN</button>
       <button id="toggleAll">Expand all</button>
+      <button id="theme" title="Light / dark / follow the device">Theme: Auto</button>
       <button id="share">Share picks</button>
       <button id="best" aria-pressed="false">Best bets</button>
       <button id="recap">Recap</button>
@@ -176,7 +185,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v2.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v2.1</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -212,7 +221,7 @@ const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v
    Paste your project's URL and anon key from Supabase → Project Settings → API Keys. The anon key is meant to ship in the page: row-level
    security on the user_state table (see supabase-setup.sql) means a signed-in user can only read and write their own rows. Leave both
    blank and the app runs device-only, exactly as before. */
-const SUPA_URL = "https://vhnpiprscrmwfvktixvb.supabase.co", SUPA_KEY = "sb_publishable_te-X3YBsJ7Bc1LfQJyoUuw_yobiOU-s", APP_ID = "se";
+const SUPA_URL = "", SUPA_KEY = "", APP_ID = "se";
 const SYNC_KEYS = ["bets","betsDeleted","picks","graded","lines","openers","overrides","bank"];   // what follows the account; caches stay on the device
 const cloud = { db:null, user:null, timers:{}, msg:"",
   ready(){ return !!(SUPA_URL && SUPA_KEY && window.supabase); },
@@ -634,9 +643,9 @@ function render(){
     const inPlay = g.state==="in";
     const scoreLine = (inPlay || g.final) ? `<div class="score ${inPlay?"live":""}">
         <span>${g.poss===g.away?"● ":""}${g.as}</span>
-        <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}${g.tv?` · ${g.tv}`:""}` : "FINAL"}</span>
+        <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}${g.tv?` · ${g.tv}`:""}` : `FINAL${g.tv?` · ${g.tv}`:""}`}</span>
         <span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : "";
-    const kick = (!inPlay && !g.final) ? `<div class="kick"><span>${g.day.split(",")[0]} <b>${g.time}</b>${g.neutral?" · neutral site":""}</span>${g.tv?`<span class="tv">${g.tv}</span>`:""}</div>` : "";
+    const kick = (!inPlay && !g.final) ? `<div class="kick"><span>${g.day.split(",")[0]} <b>${g.time}</b>${g.neutral?" · neutral site":""}</span><span class="tv">${g.tv || "TV TBA"}</span></div>` : "";
     const liveWP = inPlay && g.liveWP!=null ? `<div class="livewp">ESPN in-game win prob: ${g.home} ${Math.round(g.liveWP*100)}% · ${g.away} ${Math.round((1-g.liveWP)*100)}%</div>` : "";
     card.innerHTML = `
       <div class="top">
@@ -917,6 +926,17 @@ function schedulePoll(){
   }, 60000 * backoff);
 }
 document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible" && live){ Promise.all([week1.some(g=>!g.final)?loadWeek1All():null, loadWeek2()]).then(()=>{backtest();ratings=buildRatings();setStatus();render();}).catch(()=>{}); schedulePoll(); } });
+/* ---------- theme ---------- */
+const THEMES = ["auto","light","dark"];
+function applyTheme(){ const t = store.get("theme","auto"), root = document.documentElement;
+  if(t==="auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t);
+  root.classList.toggle("os-dark", window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark = t==="dark" || (t==="auto" && root.classList.contains("os-dark"));
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#121A26" : "#17263A");
+  const b = document.getElementById("theme"); if(b) b.textContent = "Theme: " + t[0].toUpperCase() + t.slice(1); }
+document.getElementById("theme").addEventListener("click", () => { const t = store.get("theme","auto"); store.set("theme", THEMES[(THEMES.indexOf(t)+1) % THEMES.length]); applyTheme(); });
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
+applyTheme();
 async function init(){
   week2.forEach(registerOpen); week1.forEach(registerOpen);
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
