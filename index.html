@@ -170,7 +170,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v1.7</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v1.8</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -210,8 +210,10 @@ const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
 function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
 /* ESPN removes the odds from the scoreboard once a game kicks off. Keep the last line seen for every game so finished games
    still grade against their closing number after a fresh page load — the opener alone isn't enough for that. */
-function applyLine(g, res){ if(!res?.line) return; let got = false;
-  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && res.line[f] != null){ g[f] = res.line[f]; got = true; }
+function applyLine(g, res){                        // the raw odds object is cached; which side is home is decided here, from the game itself
+  const line = res?.line || (res?.pc ? (fake => ({spread: parseSpread(fake, g.home, g.away), ou: parseTotal(fake), mlH: parseML(fake,"home"), mlA: parseML(fake,"away")}))({odds:[res.pc]}) : null);
+  if(!line) return; let got = false;
+  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && line[f] != null){ g[f] = line[f]; got = true; }
   if(got) rememberLines(g); }
 function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = false;
   for(const f of ["spread","ou","mlH","mlA"]){ if(g[f] != null && g[f] !== L[f]){ L[f] = g[f]; changed = true; } }
@@ -219,6 +221,7 @@ function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = 
   for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && L[f] != null) g[f] = L[f];
   if(g.spread == null && openers[k] != null) g.spread = openers[k]; }   // older visits only saved the opener — better than no line
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
+const CORE = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
 const FBS_Q = "groups=80&limit=300";                              // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
 const isFBS = t => !fbs.size || fbs.has(t);                       // until the team list loads, trust everyone
 const nameOf = t => `${rank[t] && rank[t] <= 25 ? `<span class="rank">#${rank[t]}</span> ` : ""}${names[t]?.short || ""}`;
@@ -681,7 +684,7 @@ function parseSpread(comp, home, away){
   return typeof o.spread==="number" ? o.spread : null;
 }
 async function fetchBox(eventId, cache=false, needLine=false){
-  if(cache && boxCache[eventId] && !(needLine && !boxCache[eventId].line)) return boxCache[eventId];
+  if(cache && boxCache[eventId] && !(needLine && !boxCache[eventId].line && !boxCache[eventId].pc)) return boxCache[eventId];
   const sum = await j(`${ESPN}/summary?event=${eventId}`);
   const st = {ypp:{}, to:{}, yds:{}};
   for(const t of sum.boxscore?.teams||[]){
@@ -697,11 +700,11 @@ async function fetchBox(eventId, cache=false, needLine=false){
   }
   /* The scoreboard drops the odds at kickoff, but the game summary keeps its pickcenter line for good — so a device that never
      saw the game before kickoff can still grade it, and prior weeks get lines for the backtest. */
-  const home = (sum.boxscore?.teams||[]).find(t=>t.homeAway==="home")?.team?.abbreviation, away = (sum.boxscore?.teams||[]).find(t=>t.homeAway==="away")?.team?.abbreviation;
-  const pc = (sum.pickcenter||[]).find(o => o.details || o.spread != null || o.overUnder != null) || sum.odds?.[0];
-  if(pc && home){ const fake = {odds:[pc]}; const line = {spread: parseSpread(fake, norm(home), norm(away)), ou: parseTotal(fake), mlH: parseML(fake,"home"), mlA: parseML(fake,"away")};
-    if(Object.values(line).some(v => v != null)) st.line = line; }
-  const ok = Object.keys(st.ypp).length===2 ? st : (st.line ? {ypp:{}, to:{}, yds:{}, line: st.line} : null);
+  const cands = [...(sum.pickcenter||[]), ...(sum.odds||[]), ...(sum.header?.competitions?.[0]?.odds||[])];
+  let pc = cands.find(o => o.details || o.spread != null || o.overUnder != null || o.pointSpread);
+  if(!pc){ try{ const od = await j(`${CORE}/events/${eventId}/competitions/${eventId}/odds`); pc = od.items?.[0]; }catch(_){} }   // second source: ESPN's core odds feed keeps every line
+  if(pc) st.pc = {details: pc.details, spread: pc.spread, overUnder: pc.overUnder, pointSpread: pc.pointSpread, total: pc.total, homeTeamOdds: pc.homeTeamOdds, awayTeamOdds: pc.awayTeamOdds, moneyline: pc.moneyline};
+  const ok = Object.keys(st.ypp).length===2 ? st : (st.pc ? {ypp:{}, to:{}, yds:{}, pc: st.pc} : null);
   if(cache && ok){ boxCache[eventId] = ok; store.set("box", boxCache); }
   return ok;
 }
@@ -771,7 +774,7 @@ async function loadWeek1(){                       // every game before the curre
         stats: prev?.stats || null, live: prev?.live || null};
       rememberLines(g); registerOpen(g);
       const needLine = g.spread == null;
-      if(g.final && !g.stats){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line)){ g.stats = c; applyLine(g, c); } else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true, needLine); applyLine(g, g.stats); }); }
+      if(g.final && !g.stats){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line && !c.pc)){ g.stats = c; applyLine(g, c); } else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true, needLine); applyLine(g, g.stats); }); }
       else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); }); }
       games1.push(g);
     }
@@ -805,7 +808,7 @@ async function loadWeek2(){
     rememberLines(g); registerOpen(g);
     const needLine = g.spread == null;
     if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); });
-    else if(g.final){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line)){ g.live = c; applyLine(g, c); } else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true, needLine); applyLine(g, g.live); }); }
+    else if(g.final){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line && !c.pc)){ g.live = c; applyLine(g, c); } else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true, needLine); applyLine(g, g.live); }); }
     games2.push(g);
   }
   await pool(liveJobs);
