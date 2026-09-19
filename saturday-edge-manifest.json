@@ -1,0 +1,17 @@
+{
+  "name": "Saturday Edge",
+  "short_name": "Saturday Edge",
+  "description": "Saturday Edge \u2014 win probability vs. the spread",
+  "start_url": "./",
+  "display": "browser",
+  "background_color": "#F5F4EE",
+  "theme_color": "#17263A",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
