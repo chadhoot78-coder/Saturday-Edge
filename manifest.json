@@ -1,7 +1,7 @@
 {
-  "name": "Saturday Edge",
-  "short_name": "Saturday Edge",
-  "description": "Saturday Edge \u2014 win probability vs. the spread",
+  "name": "Football Edge",
+  "short_name": "Football Edge",
+  "description": "Football Edge \u2014 college and NFL win probability vs. the spread",
   "start_url": "./",
   "display": "browser",
   "background_color": "#F5F4EE",

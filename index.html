@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Saturday Edge</title>
+<title>Football Edge</title>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="manifest" href="manifest.json" id="manifestLink">
-<meta name="apple-mobile-web-app-title" content="Saturday Edge">
+<meta name="apple-mobile-web-app-title" content="Football Edge">
 <meta name="theme-color" content="#17263A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -181,10 +181,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div id="stickybar" aria-hidden="true"><div><span class="sbName">Saturday Edge</span> <b id="sbWeek"></b></div><span id="sbInfo"></span></div>
+<div id="stickybar" aria-hidden="true"><div><span class="sbName">Football Edge</span> <b id="sbWeek"></b></div><span id="sbInfo"></span></div>
 <div class="wrap">
   <header>
-    <h1><span class="appName">Saturday Edge</span><small><span id="wk">FBS</span> · win probability vs. the spread</small></h1>
+    <h1><span class="appName">Football Edge</span><small><span id="wk">College</span> · win probability vs. the spread</small></h1>
     <div class="status" id="status" aria-live="polite">Loading results from ESPN…</div>
   </header>
 
@@ -268,13 +268,13 @@
 /* ---------- leagues: one app, two slates. Everything league-specific lives here; the rest of the file reads LG. ----------
    The league comes from ?league=cfb|nfl in the URL (so a home-screen icon can pin one), else the last one used, else college. */
 const LEAGUES = {
-  cfb: { id:"cfb", name:"Saturday Edge", label:"College", tag:"FBS", prefix:"se:", appId:"se", file:"saturday-edge",
+  cfb: { id:"cfb", name:"Football Edge", label:"College", tag:"FBS", prefix:"se:", appId:"se", file:"football-edge-college",
     espn:"https://site.api.espn.com/apis/site/v2/sports/football/college-football", core:"https://sports.core.api.espn.com/v2/sports/football/leagues/college-football",
     q:"groups=80&limit=300",                          // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
     HFA:2.5, SD:16, MARGIN_CAP:35, FCS_R:-22, MAX_WEEK:16, RANGE:90, AUTO_MIN:150, K_MIN:250, PRIOR_N:150, LG_TEAM_PTS:28.5,
     KEY:{0:0, 1:.9, 2:.9, 3:1.35, 4:1.05, 5:.9, 6:1.05, 7:1.25, 8:.95, 10:1.1, 14:1.1, 17:1.05, 21:1.05},   // no ties in college; 3 and 7 matter less than in the NFL
     week1:[7,30] },                                   // ESPN folds Week 0 into Week 1; weeks roll over the Sunday after the Week 0 games (Aug 30)
-  nfl: { id:"nfl", name:"Gridiron Edge", label:"NFL", tag:"NFL", prefix:"ge:", appId:"ge", file:"gridiron-edge",
+  nfl: { id:"nfl", name:"Football Edge", label:"NFL", tag:"NFL", prefix:"ge:", appId:"ge", file:"football-edge-nfl",
     espn:"https://site.api.espn.com/apis/site/v2/sports/football/nfl", core:"https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
     q:"limit=100",
     HFA:1.5, SD:13.5, MARGIN_CAP:99, FCS_R:0, MAX_WEEK:18, RANGE:70, AUTO_MIN:64, K_MIN:100, PRIOR_N:100, LG_TEAM_PTS:22.5,
@@ -914,13 +914,13 @@ function render(){
     (sN ? ` &nbsp;·&nbsp; ${past||fut?"Other":"Prior"} weeks: <b>${season.W}–${season.L}${season.P?"–"+season.P:""}</b>` : "");
   const days = all.map(g=>g.ts).filter(Boolean); const md = t => new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric"});
   const range = days.length ? ` · ${md(Math.min(...days))}${Math.max(...days)-Math.min(...days) > 864e5 ? "–" + md(Math.max(...days)).replace(/^\w+ /,"") : ""}` : "";
-  document.getElementById("wk").textContent = `Week ${VW}${range}`;
+  document.getElementById("wk").textContent = `${LG.label} · Week ${VW}${range}`;
   document.getElementById("wlabel").innerHTML = `Week ${VW}<small>${range.replace(/^ · /,"")}</small>${past?`<span class="past">as the model saw it</span>`:fut?`<span class="past">early lines</span>`:""}`;
   document.getElementById("wprev").disabled = VW <= 1; document.getElementById("wnext").disabled = VW >= MAX_WEEK;
   document.getElementById("wprev").textContent = `◀ Wk ${VW-1}`; document.getElementById("wnext").textContent = `Wk ${VW+1} ▶`;
-  document.getElementById("sbWeek").textContent = `Wk ${VW}`;
+  document.getElementById("sbWeek").textContent = `${LG.label} Wk ${VW}`;
   document.getElementById("sbInfo").textContent = `ATS ${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}${sN?` · season ${season.W+rec.W}–${season.L+rec.L}`:""}${week2.filter(g=>g.state==="in").length?` · ${week2.filter(g=>g.state==="in").length} live`:""}`;
-  document.title = `${LG.name} — Week ${VW}`;
+  document.title = `${LG.name} · ${LG.label} — Week ${VW}`;
   renderLedger(); renderMovers(); renderSeason();
 }
 function tapeRows(g, H){                             // the "why" behind the number: form, pace, ATS record, scoring
@@ -1276,8 +1276,8 @@ applyTheme();
 /* branding + switch */
 (function brand(){
   document.querySelectorAll(".appName,.sbName").forEach(el => el.textContent = LG.name);
-  document.getElementById("wk").textContent = LG.tag;
-  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", LG.name);   // read when the page is added to the Home Screen
+  document.getElementById("wk").textContent = LG.label;
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", NFL ? `${LG.name} NFL` : LG.name);   // read when the page is added to the Home Screen; ?league=nfl gets its own label
   document.querySelectorAll(".method[data-lg]").forEach(el => { el.hidden = el.dataset.lg !== LG.id; });   // the league's own "how it works" text
   const sw = document.getElementById("lgswitch");
   sw.querySelectorAll("button").forEach(b => { b.classList.toggle("on", b.dataset.lg === LG.id); b.setAttribute("aria-pressed", b.dataset.lg === LG.id);
@@ -1315,13 +1315,13 @@ async function sharePicks(recap = false){
   const chipLabel = CHIPS.find(c => c[0]===filterMode)?.[1] || CHIPS[0][1];
   gradeBets(); const wk = bets.filter(b => b.week === VW && b.result); const wkPL = wk.reduce((a,b)=>a+b.profit,0);
   const recW = L.filter(x=>x.res==="✓").length, recL = L.filter(x=>x.res==="✗").length;
-  const text = `${LG.name} — Week ${VW} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
+  const text = `${LG.name} (${LG.label}) — Week ${VW} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
   try{ await document.fonts.ready; }catch(_){}
   const W = 1080, rowH = 62, top = 230, H = top + L.length*rowH + 90;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
   c.fillStyle = "#F5F4EE"; c.fillRect(0,0,W,H);
   c.fillStyle = "#17263A"; c.fillRect(0,0,W,150);
-  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${VW} RECAP` : LG.name.toUpperCase(), 48, 92);
+  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `${LG.label.toUpperCase()} WEEK ${VW} RECAP` : `${LG.name.toUpperCase()} · ${LG.label.toUpperCase()}`, 48, 92);
   c.font = "500 30px Barlow, sans-serif"; c.fillText(recap ? `Model picks ${recW}–${recL} ATS${wk.length?` · logged bets ${wkPL>=0?"+":"−"}$${Math.abs(wkPL).toFixed(0)} on ${wk.length} bet${wk.length>1?"s":""}`:""}` : `Week ${VW} · ${chipLabel} · ${total > L.length ? `top ${L.length} of ${total} · ` : ""}${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`, 48, 132);
   c.fillStyle = "#5B6778"; c.font = "600 24px Barlow, sans-serif"; c.fillText("PICK", 48, top-24); c.fillText("GAME", 400, top-24); c.fillText("WIN %", 640, top-24); c.fillText("COVER", 780, top-24); c.fillText("TOTAL", 900, top-24);
   L.forEach((x,i) => { const y = top + i*rowH;
