@@ -212,7 +212,7 @@ const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v
    Paste your project's URL and anon key from Supabase → Project Settings → API Keys. The anon key is meant to ship in the page: row-level
    security on the user_state table (see supabase-setup.sql) means a signed-in user can only read and write their own rows. Leave both
    blank and the app runs device-only, exactly as before. */
-const SUPA_URL = "", SUPA_KEY = "", APP_ID = "se";
+const SUPA_URL = "https://vhnpiprscrmwfvktixvb.supabase.co", SUPA_KEY = "sb_publishable_te-X3YBsJ7Bc1LfQJyoUuw_yobiOU-s", APP_ID = "se";
 const SYNC_KEYS = ["bets","betsDeleted","picks","graded","lines","openers","overrides","bank"];   // what follows the account; caches stay on the device
 const cloud = { db:null, user:null, timers:{}, msg:"",
   ready(){ return !!(SUPA_URL && SUPA_KEY && window.supabase); },
