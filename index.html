@@ -143,7 +143,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer">For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v1.4</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -175,7 +175,7 @@ const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%;
 const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
                 set(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
 let K_SHRINK = store.get("k", 2.33);                              // games-played shrink: n/(n+K) → 30% at 1 game, 63% at 4, 81% at 10
-let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {});
+let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {}), picks = store.get("picks", {});   // picks: side + line frozen at kickoff
 let bets = store.get("bets", []), lastSeen = store.get("lastSeen", {}), lines = store.get("lines", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
 let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", [])), filterMode = store.get("filter", "all");
 const saveBets = () => store.set("bets", bets);
@@ -186,7 +186,8 @@ function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=nu
 function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = false;
   for(const f of ["spread","ou","mlH","mlA"]){ if(g[f] != null && g[f] !== L[f]){ L[f] = g[f]; changed = true; } }
   if(changed){ lines[k] = L; store.set("lines", lines); }
-  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && L[f] != null) g[f] = L[f]; }
+  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && L[f] != null) g[f] = L[f];
+  if(g.spread == null && openers[k] != null) g.spread = openers[k]; }   // older visits only saved the opener — better than no line
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
 const FBS_Q = "groups=80&limit=300";                              // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
 const isFBS = t => !fbs.size || fbs.has(t);                       // until the team list loads, trust everyone
@@ -360,20 +361,21 @@ function evaluate(g, w){
   const rh = ratings[g.home] ?? 0, ra = ratings[g.away] ?? 0;
   const rest = restAdj(g), ih = injAdj(g.home), ia = injAdj(g.away);
   const modelLine = rh - ra + (g.neutral ? 0 : HFA) + rest.pts - ih.pts + ia.pts;   // expected home margin; no home field at a neutral site
-  const spread = overrides[g.home+g.away] ?? g.spread; // home-relative, negative = home favored
+  const lk = g.final ? picks[gkey(g)] : null;                     // the pick this phone locked before kickoff, if it saw the game then
+  const spread = lk ? lk.sp : (overrides[g.home+g.away] ?? g.spread); // home-relative, negative = home favored
   const market = spread == null ? null : -spread;    // market expected home margin
   const blend = market == null ? modelLine : w*modelLine + (1-w)*market;
   const pHome = winP(blend);
   const pMkt  = market == null ? null : winP(market);
   const edge  = market == null ? 0 : blend - market;
-  const pickHome = market == null ? null : edge >= 0;                 // side the blend favors vs the number
+  const pickHome = lk ? lk.ph : market == null ? null : edge >= 0;    // side the blend favors vs the number (or the locked side once final)
   let ats = null;                                                      // "W" | "L" | "P" once the game is final
   if(pickHome != null && g.final){ const cover = (g.hs - g.as) + spread; ats = cover === 0 ? "P" : (cover > 0) === pickHome ? "W" : "L"; }
   const move = (g.open!=null && spread!=null) ? spread - g.open : 0;   // home-relative; negative = money on home
   const pCoverHome = spread == null ? null : coverP(blend, spread);
   const pCover = pickHome == null ? null : (pickHome ? pCoverHome : 1 - pCoverHome);   // chance the pick covers
   const evPer100 = pCover == null ? null : pCover*100*100/110 - (1-pCover)*100;        // $ EV per $100 at -110
-  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, hasRating: g.home in ratings && g.away in ratings};
+  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, locked: !!lk, hasRating: g.home in ratings && g.away in ratings};
 }
 
 /* ---------- render ---------- */
@@ -464,7 +466,14 @@ function render(){
 
   const open = new Set([...document.querySelectorAll(".game.open")].map(e=>e.dataset.key));
   const rec = {W:0,L:0,P:0};
-  for(const g of week2){ const e = evaluate(g, w); if(e.ats){ rec[e.ats]++; const gk = gkey(g); if(graded[gk] !== e.ats){ graded[gk] = e.ats; store.set("graded", graded); } } }   // whole slate, whatever the filter
+  let pickDirty = false;
+  for(const g of week2){                           // whole week, whatever filter or Best-bets view is on
+    const e = evaluate(g, w), k = gkey(g);
+    if(!g.final && g.state !== "in" && e.pickHome != null && e.spread != null){   // still pre-kickoff: (re)freeze the pick and the line it was made against
+      const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100)}; pickDirty = true; } }
+    if(e.ats){ rec[e.ats]++; if(graded[k] !== e.ats){ graded[k] = e.ats; store.set("graded", graded); } }
+  }
+  if(pickDirty) store.set("picks", picks);
   const wrap = document.getElementById("games"); wrap.innerHTML = "";
   for(const g of week1.filter(x=>!x.final)){
     const h = document.createElement("div"); h.className="day"; h.innerHTML = `Week ${g.week ?? CUR-1} · ${g.day} <span>${g.state==="in"?"in progress":g.time}</span>`; wrap.appendChild(h);
@@ -516,12 +525,12 @@ function render(){
     const key = g.home+g.away;
     const fav = e.pHome >= .5 ? g.home : g.away;
     const favP = e.pHome >= .5 ? e.pHome : 1-e.pHome;
-    let lean = `<div class="lean none">Enter a spread below to compare</div>`;
+    let lean = `<div class="lean none">${g.final ? "Not graded — ESPN dropped the line at kickoff and this app never saw it. Type the closing spread below and it will grade." : "Enter a spread below to compare"}</div>`;
     if(e.market != null){
       const side = e.pickHome ? g.home : g.away;
       const num  = e.pickHome ? e.spread : -e.spread;
       const strong = e.pCover >= PLAY_MIN;
-      let grade = e.ats ? ` <span class="grade ${e.ats}">${e.ats==="P"?"PUSH":e.ats==="W"?"WIN":"LOSS"} · ${g.away} ${g.as}–${g.hs} ${g.home}</span>` : "";
+      let grade = e.ats ? ` <span class="grade ${e.ats}">${e.ats==="P"?"PUSH":e.ats==="W"?"WIN":"LOSS"} · ${g.away} ${g.as}–${g.hs} ${g.home}</span>${e.locked?` <span style="opacity:.6">locked pre-kickoff</span>`:""}` : "";
       if(!e.ats && g.state==="in"){ const cover = (g.hs - g.as) + e.spread; const ok = cover===0 ? null : (cover>0)===e.pickHome;
         grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
       const canLog = !g.final && g.state!=="in";
