@@ -170,7 +170,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v1.6</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v1.7</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -210,6 +210,9 @@ const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
 function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
 /* ESPN removes the odds from the scoreboard once a game kicks off. Keep the last line seen for every game so finished games
    still grade against their closing number after a fresh page load — the opener alone isn't enough for that. */
+function applyLine(g, res){ if(!res?.line) return; let got = false;
+  for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && res.line[f] != null){ g[f] = res.line[f]; got = true; }
+  if(got) rememberLines(g); }
 function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = false;
   for(const f of ["spread","ou","mlH","mlA"]){ if(g[f] != null && g[f] !== L[f]){ L[f] = g[f]; changed = true; } }
   if(changed){ lines[k] = L; store.set("lines", lines); }
@@ -677,8 +680,8 @@ function parseSpread(comp, home, away){
   if(o.details){ const m = o.details.match(/([A-Z][A-Z0-9&'\-]{1,6})\s*([+-]?\d+(?:\.\d+)?)/); if(m){ const t = norm(m[1]), n = +m[2]; if(t===home) return n; if(t===away) return -n; } if(/EVEN|PK/i.test(o.details)) return 0; }
   return typeof o.spread==="number" ? o.spread : null;
 }
-async function fetchBox(eventId, cache=false){
-  if(cache && boxCache[eventId]) return boxCache[eventId];
+async function fetchBox(eventId, cache=false, needLine=false){
+  if(cache && boxCache[eventId] && !(needLine && !boxCache[eventId].line)) return boxCache[eventId];
   const sum = await j(`${ESPN}/summary?event=${eventId}`);
   const st = {ypp:{}, to:{}, yds:{}};
   for(const t of sum.boxscore?.teams||[]){
@@ -692,7 +695,13 @@ async function fetchBox(eventId, cache=false){
     const tv = parseFloat(get("turnovers")); if(!isNaN(tv)) st.to[ab] = tv;
     const yd = parseFloat(get("totalYards")); if(!isNaN(yd)) st.yds[ab] = yd;
   }
-  const ok = Object.keys(st.ypp).length===2 ? st : null;
+  /* The scoreboard drops the odds at kickoff, but the game summary keeps its pickcenter line for good — so a device that never
+     saw the game before kickoff can still grade it, and prior weeks get lines for the backtest. */
+  const home = (sum.boxscore?.teams||[]).find(t=>t.homeAway==="home")?.team?.abbreviation, away = (sum.boxscore?.teams||[]).find(t=>t.homeAway==="away")?.team?.abbreviation;
+  const pc = (sum.pickcenter||[]).find(o => o.details || o.spread != null || o.overUnder != null) || sum.odds?.[0];
+  if(pc && home){ const fake = {odds:[pc]}; const line = {spread: parseSpread(fake, norm(home), norm(away)), ou: parseTotal(fake), mlH: parseML(fake,"home"), mlA: parseML(fake,"away")};
+    if(Object.values(line).some(v => v != null)) st.line = line; }
+  const ok = Object.keys(st.ypp).length===2 ? st : (st.line ? {ypp:{}, to:{}, yds:{}, line: st.line} : null);
   if(cache && ok){ boxCache[eventId] = ok; store.set("box", boxCache); }
   return ok;
 }
@@ -761,8 +770,9 @@ async function loadWeek1(){                       // every game before the curre
         spread: parseSpread(c, home, away) ?? prev?.spread ?? null, ou: parseTotal(c) ?? prev?.ou ?? null, mlH: parseML(c,"home") ?? prev?.mlH ?? null, mlA: parseML(c,"away") ?? prev?.mlA ?? null,
         stats: prev?.stats || null, live: prev?.live || null};
       rememberLines(g); registerOpen(g);
-      if(g.final && !g.stats){ if(boxCache[ev.id]) g.stats = boxCache[ev.id]; else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true); }); }
-      else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); }); }
+      const needLine = g.spread == null;
+      if(g.final && !g.stats){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line)){ g.stats = c; applyLine(g, c); } else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true, needLine); applyLine(g, g.stats); }); }
+      else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); }); }
       games1.push(g);
     }
   });
@@ -793,8 +803,9 @@ async function loadWeek2(){
       liveWP: sit.lastPlay?.probability?.homeWinPercentage ?? null,
       live: prev?.live || null};
     rememberLines(g); registerOpen(g);
-    if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); });
-    else if(g.final){ if(boxCache[ev.id]) g.live = boxCache[ev.id]; else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true); }); }
+    const needLine = g.spread == null;
+    if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); });
+    else if(g.final){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line)){ g.live = c; applyLine(g, c); } else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true, needLine); applyLine(g, g.live); }); }
     games2.push(g);
   }
   await pool(liveJobs);
