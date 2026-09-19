@@ -221,7 +221,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v3.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v3.1</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -231,7 +231,7 @@
     <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest — and, since v3, out of the picks too. A −22 prior against a 55-point line produced "85% to cover" underdogs that lost by 80, so a game with an FCS team shows the market number only: no ATS side, no total play, no stake. The bar and win % on those cards are the market's, not the model's.</p>
     <p><b>Neutral sites &amp; rest.</b> Kickoff classics, rivalry games at neutral venues, and conference title games get no home-field points. The model line gets ±0.3 points per day of rest advantage (byes, Friday games). ESPN injury data is thin for college football, so injuries are applied only when the feed has them.</p>
     <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the venue for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes are skipped.</p>
-    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off.</p>
+    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off. Until then the log shows how far the line has moved from your number; once the game is on it shows whether the bet is covering and by how much, live.</p>
     <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the FBS average of 28.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 16-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
     <p><b>Past and future weeks.</b> The ◀ ▶ arrows step through the season. A past week is re-scored with only the ratings that existed before it kicked off (the same walk-forward rule as the backtest), so what you see is what the model would have said that Saturday, not hindsight. Future weeks show whatever lines the books have posted.</p>
     <p><b>Alerts.</b> Turn on Alerts and the app sends a notification when a line moves half a point or more on a play or a logged bet. It checks while the app is open or in a background tab; this is a one-file app with no server, so it can't wake a closed phone.</p>
@@ -577,11 +577,36 @@ function gradeBets(){
   }
   saveBets();
 }
+/* how an open bet is doing right now: covering/not with the margin while the game is on, or the line drift before kickoff */
+function betStatus(b){
+  const g = [...week1, ...week2].find(x => gkey(x) === b.key);
+  if(!g) return {html:"open", ok:null, live:false, drift:null};
+  const inPlay = g.state === "in";
+  if(!inPlay && !g.final){                          // pre-kickoff: where has the line gone since you took it?
+    const now = b.type==="total" ? g.ou : b.type==="spread" ? g.spread : null;
+    let drift = null, txt = "";
+    if(now != null && b.line != null && b.type !== "ml"){
+      const mine = b.line, cur = b.type==="total" ? now : (b.side===b.home ? now : -now);   // both from the bettor's side: +6.5 on the dog, -3.5 on the favorite
+      const d = b.type==="total" ? (b.side==="Over" ? cur - mine : mine - cur) : mine - cur;   // + = your number is better than the current one
+      drift = `<span class="${d>0?"pos":d<0?"neg":""}" title="current line vs. the one you took">${d>0?"+":""}${d.toFixed(1)} so far</span>`;
+      txt = d ? `line now ${b.type==="total"?cur:(cur>0?"+":"")+cur.toFixed(1)}` : "line unchanged"; }
+    const cd = g.ts ? countdown(g.ts) : "";
+    return {html:`<span style="color:var(--ink-2)">${cd?`kicks in ${cd}`:g.time||"pending"}${txt?` · ${txt}`:""}</span>`, ok:null, live:false, drift};
+  }
+  let ok = null, txt = "";
+  const score = `${g.away} ${g.as}–${g.hs} ${g.home}`;
+  if(b.type==="spread"){ const cov = b.side===g.home ? (g.hs - g.as) + b.line : (g.as - g.hs) + b.line; ok = cov===0 ? null : cov > 0;
+    txt = `${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cov).toFixed(1)}`; }
+  else if(b.type==="total"){ const pts = g.hs + g.as, d = pts - b.line; ok = d===0 ? null : (d>0) === (b.side==="Over");
+    txt = b.side==="Over" ? (d>=0 ? `${pts} so far · over by ${d}` : `${pts} so far · needs ${-d}`) : (d<0 ? `${pts} so far · ${-d} to spare` : `${pts} so far · over by ${d}`); }
+  else { const lead = b.side===g.home ? g.hs - g.as : g.as - g.hs; ok = lead===0 ? null : lead > 0; txt = lead===0 ? "TIED" : `${ok?"LEADING":"TRAILING"} by ${Math.abs(lead)}`; }
+  return {html:`<span class="grade ${ok==null?"":ok?"W":"L"}">${txt}</span> <span style="color:var(--ink-2);font-size:12px;white-space:nowrap">${score}${g.clock?` · ${g.clock}`:""}</span>`, ok, live:true, drift:null};
+}
 function clvOf(b){                                  // closing-line value in points, positive = you beat the close
   if(b.closing == null || b.line == null || b.type==="ml") return null;
   if(b.type==="total") return b.side==="Over" ? b.closing - b.line : b.line - b.closing;
-  const mine = b.side===b.home ? b.line : -b.line, close = b.side===b.home ? b.closing : -b.closing;   // spread from bettor's side
-  return mine - close;
+  const close = b.side===b.home ? b.closing : -b.closing;   // the closing spread from the bettor's side; b.line is already stored that way
+  return b.line - close;
 }
 function renderLedger(){
   const box = document.getElementById("ledger"); if(!box) return;
@@ -591,10 +616,12 @@ function renderLedger(){
   const pl = done.reduce((a,b)=>a+b.profit,0), risked = done.reduce((a,b)=>a+b.stake,0);
   const clvs = bets.map(clvOf).filter(v=>v!=null), avgClv = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
   const openB = bets.filter(b=>!b.result);
-  const row = b => `<tr><td>Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?"—":(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:"open"}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`;
+  const lives = openB.map(betStatus); const nCov = lives.filter(x => x.ok === true).length, nNot = lives.filter(x => x.ok === false).length, nIn = lives.filter(x => x.live).length;
+  const row = b => { const st = b.result ? null : betStatus(b);
+    return `<tr><td>Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?(st?.drift ?? "—"):(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:st.html}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`; };
   const settled = done.slice().sort((a,b) => a.ts - b.ts); let run = 0; const curve = settled.map(b => (run += b.profit));
   box.innerHTML = `<h2>Bet log</h2>
-    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)+" pts"}</b></span><span>Open <b>${openB.length}</b></span></div>
+    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)+" pts"}</b></span><span>Open <b>${openB.length}</b>${nIn?` · live <b class="pos">${nCov} covering</b>${nNot?` <b class="neg">${nNot} not</b>`:""}`:""}</span></div>
     ${curve.length >= 2 ? lineChart(curve.map((v,i) => ({x:i+1, y:v, label:`Bet ${i+1}: ${settled[i].side} · ${settled[i].result} · running ${v>=0?"+":"−"}$${Math.abs(v).toFixed(0)}`, cls: settled[i].result})), {zero:true, fmt: v => (v>=0?"+":"−")+"$"+Math.abs(v).toFixed(0), title:"Running profit, bet by bet"}) : ""}
     <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${bets.slice().reverse().map(row).join("")}</table></div>
     <div class="btns"><button id="csv">Export CSV</button></div>
