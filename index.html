@@ -40,7 +40,16 @@
   h1{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:40px;line-height:.9;letter-spacing:-.01em}
   h1 small{display:block;font-weight:600;font-size:17px;color:var(--ink-2);letter-spacing:0;margin-top:6px;font-family:"Barlow",sans-serif}
   .status{font-size:13px;color:var(--ink-2);text-align:right;line-height:1.3;max-width:46%}
-  .status b{color:var(--ink);font-weight:600}
+  .status b{color:var(--ink);font-weight:600} .status span{display:block}
+  @media (max-width:479px){ header{flex-wrap:wrap;gap:2px 12px} h1{font-size:36px} .status{max-width:none;text-align:left;width:100%;order:3} .status span{display:inline} .status span + span::before{content:" · "} }
+  /* slim bar that takes over once the big header scrolls away (phone/tablet only) */
+  #stickybar{position:fixed;top:0;left:0;right:0;z-index:20;display:none;align-items:center;justify-content:space-between;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 14px 6px;background:var(--ink);color:var(--chalk);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #stickybar.show{display:flex} #stickybar span{font-family:"Barlow",sans-serif;font-weight:500;font-size:13px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #stickybar b{color:var(--away)}
+  .weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px}
+  .weeknav button{padding:7px 12px;font-size:13px;border-color:var(--line);color:var(--ink-2);white-space:nowrap;flex:0 0 auto} .weeknav button:disabled{opacity:.35;cursor:default}
+  .weeknav .cur{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px} .weeknav .cur small{font-family:"Barlow",sans-serif;font-weight:400;font-size:12px;color:var(--ink-2);margin-left:6px}
+  .weeknav .cur{text-align:center;min-width:0} .weeknav .cur .past{display:block;color:var(--flag);font-size:12px;font-family:"Barlow",sans-serif;font-weight:600;line-height:1.1}
 
   .controls{padding:14px 0 6px;border-bottom:1px solid var(--line)}
   .seg{display:flex;gap:6px}
@@ -56,8 +65,21 @@
   button.primary{background:var(--ink);color:var(--chalk)}
   button:focus-visible,input:focus-visible,.game:focus-visible{outline:3px solid var(--away);outline-offset:2px}
   .hint{font-size:13px;color:var(--ink-2);margin-top:8px}
-  .auth{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)} .auth input{width:100%;font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:var(--r);margin-top:6px;background:var(--card)}
-  .auth .who{font-size:13px;color:var(--ink-2)} .auth .who b{color:var(--ink)} .auth .btns{margin-top:8px}
+  .auth{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2)} .auth input{width:100%;font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:var(--r);margin-top:6px;background:var(--card)}
+  .auth .who{font-size:13px;color:var(--ink-2);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap} .auth .who b{color:var(--ink)} .auth .btns{margin-top:8px}
+  .auth .linkish{background:none;border:none;padding:0;color:var(--ink);text-decoration:underline;font-size:13px;font-weight:600}
+  .viewchips{margin-top:6px}
+  .logo{width:30px;height:30px;object-fit:contain;flex:0 0 auto;vertical-align:middle}
+  .team{display:flex;align-items:center;gap:7px} .team.right{flex-direction:row-reverse} .team > div{min-width:0}
+  .wx{font-weight:500;font-size:11.5px;color:var(--ink-2);white-space:nowrap} .wx.bad{color:var(--flag);font-weight:600}
+  .countdown{color:var(--flag);font-weight:600}
+  .chart{width:100%;height:auto;display:block;margin:6px 0 4px} .chart text{font-family:"Barlow",sans-serif;font-size:11px;fill:var(--ink-2)}
+  .chart .grid{stroke:var(--line);stroke-width:1} .chart .ln{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .chart .pt{fill:var(--card);stroke:var(--ink);stroke-width:2} .chart .pt.W{stroke:var(--turf)} .chart .pt.L{stroke:var(--flag)}
+  .chart .zero{stroke:var(--ink-2);stroke-dasharray:3 3;stroke-width:1}
+  .splits{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+  .split{border:1.5px solid var(--line);border-radius:var(--r);padding:8px 10px} .split small{display:block;font-size:12px;color:var(--ink-2)} .split b{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:700} .split span{font-size:12px;color:var(--ink-2);margin-left:4px}
+  .fcsnote{font-size:13px;color:var(--ink-2);margin-top:8px;font-style:italic}
   .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .chips button{white-space:nowrap;padding:6px 11px;font-size:13px;border-color:var(--line);color:var(--ink-2);flex:0 0 auto}
   .chips button.on{background:var(--ink);border-color:var(--ink);color:var(--chalk)}
@@ -84,7 +106,8 @@
   .bar .home{position:absolute;right:0;top:0;bottom:0;background:var(--turf);border-radius:0 3px 3px 0}
   .bar .tick{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);transform:translateX(-50%)}
   .bar .tick::after{content:"";position:absolute;left:50%;top:-6px;width:0;height:0;border:5px solid transparent;border-top-color:var(--ink);transform:translateX(-50%)}
-  .score{display:flex;justify-content:space-between;align-items:baseline;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:34px;line-height:1;margin:-2px 0 8px;color:var(--ink-2)}
+  .score{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:34px;line-height:1;margin:-2px 0 8px;color:var(--ink-2)}
+  .score > span:first-child,.score > span:last-child{white-space:nowrap} .score .clock{flex:1;text-align:center}
   .score.live{color:var(--ink)}
   .score .clock{font-family:"Barlow",sans-serif;font-weight:600;font-size:12px;color:var(--flag);letter-spacing:.04em;text-transform:uppercase}
   .score:not(.live) .clock{color:var(--ink-2)}
@@ -123,10 +146,18 @@
   .method p{margin-bottom:8px;color:var(--ink-2)}
   .method p b{color:var(--ink)}
   @media (prefers-reduced-motion:no-preference){ .bar .home{transition:width .35s ease} }
+  /* ---------- tablet / small laptop: two cards across, phone controls ---------- */
+  @media (min-width:680px) and (max-width:899px){
+    .wrap{max-width:880px}
+    #games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+    #games > .day,#games > .record,#games > .empty,#games > .alert,#games > .finals{grid-column:1/-1} #games > .game{margin-bottom:0}
+  }
   /* ---------- desktop: sidebar + multi-column slate; the phone layout is unchanged below 900px ---------- */
   @media (min-width:900px){
     .wrap{max-width:1500px;padding:0 28px;display:grid;grid-template-columns:300px minmax(0,1fr) minmax(0,1fr);column-gap:26px;align-items:start;
-      grid-template-areas:"head head head" "side alerts alerts" "side record record" "side games games" "side ledger movers" "side learn method" "side disc disc"}
+      grid-template-areas:"head head head" "side alerts alerts" "side nav nav" "side record record" "side games games" "side season season" "side ledger movers" "side learn method" "side disc disc"}
+    .wrap > #weeknav{grid-area:nav} .wrap > #season{grid-area:season}
+    #stickybar{display:none!important}
     .wrap > header{grid-area:head}
     .wrap > .controls{grid-area:side;position:sticky;top:12px;margin-top:14px;padding:14px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card);max-height:calc(100vh - 24px);overflow:auto}
     .controls .seg{flex-wrap:wrap} .controls .seg button{flex:1 1 40%}
@@ -136,7 +167,7 @@
     .wrap > #alerts{grid-area:alerts} .wrap > .record{grid-area:record;margin-top:10px} .wrap > #games{grid-area:games}
     .wrap > #ledger{grid-area:ledger} .wrap > #movers{grid-area:movers} .wrap > #learn{grid-area:learn} .wrap > section.method:last-of-type{grid-area:method} .wrap > .disclaimer{grid-area:disc}
     #games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
-    #games > .day{grid-column:1/-1;margin:16px 0 0} #games > .record,#games > .empty,#games > .alert{grid-column:1/-1}
+    #games > .day{grid-column:1/-1;margin:16px 0 0} #games > .record,#games > .empty,#games > .alert,#games > .finals{grid-column:1/-1}
     #games > .game{margin-bottom:0} .game:hover{border-color:var(--ink-2)} .game.flag:hover{border-color:var(--flag)}
     .method{margin-top:24px} .method p{max-width:80ch}
     .tablewrap table{min-width:0}
@@ -148,6 +179,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div id="stickybar" aria-hidden="true"><div>Saturday Edge <b id="sbWeek"></b></div><span id="sbInfo"></span></div>
 <div class="wrap">
   <header>
     <h1>Saturday Edge<small><span id="wk">FBS</span> · win probability vs. the spread</small></h1>
@@ -172,30 +204,37 @@
       <button id="share">Share picks</button>
       <button id="best" aria-pressed="false">Best bets</button>
       <button id="recap">Recap</button>
+      <button id="notify" title="Get a notification when a line moves on a play or a logged bet">Alerts: Off</button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
+    <div class="chips viewchips" id="viewchips" role="group" aria-label="View options"></div>
     <div class="auth" id="auth"></div>
     <div class="hint" id="hint">Gold = away, green = home. The dark tick is where the betting line puts it. Tap a game for the numbers.</div>
   </section>
 
   <div id="alerts"></div>
+  <div class="weeknav" id="weeknav"><button id="wprev" type="button">◀</button><div class="cur" id="wlabel"></div><button id="wnext" type="button">▶</button></div>
   <div class="record" id="record"></div>
   <div id="games"></div>
 
+  <section class="method" id="season"></section>
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v2.1</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v3.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
   <section class="method">
     <h2>How the number is built</h2>
     <p><b>Team rating.</b> Every FBS game played this season counts: point margin (home field removed, capped at ±35 so a 70-point rout counts like a 35-point one), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
-    <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest, and a line on one is a rough prior at best.</p>
+    <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest — and, since v3, out of the picks too. A −22 prior against a 55-point line produced "85% to cover" underdogs that lost by 80, so a game with an FCS team shows the market number only: no ATS side, no total play, no stake. The bar and win % on those cards are the market's, not the model's.</p>
     <p><b>Neutral sites &amp; rest.</b> Kickoff classics, rivalry games at neutral venues, and conference title games get no home-field points. The model line gets ±0.3 points per day of rest advantage (byes, Friday games). ESPN injury data is thin for college football, so injuries are applied only when the feed has them.</p>
-    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks. Closing-line value is recorded when the game kicks off.</p>
+    <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the venue for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes are skipped.</p>
+    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off.</p>
     <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the FBS average of 28.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 16-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
+    <p><b>Past and future weeks.</b> The ◀ ▶ arrows step through the season. A past week is re-scored with only the ratings that existed before it kicked off (the same walk-forward rule as the backtest), so what you see is what the model would have said that Saturday, not hindsight. Future weeks show whatever lines the books have posted.</p>
+    <p><b>Alerts.</b> Turn on Alerts and the app sends a notification when a line moves half a point or more on a play or a logged bet. It checks while the app is open or in a background tab; this is a one-file app with no server, so it can't wake a closed phone.</p>
     <p><b>Learning.</b> After each completed week the app replays the season: for every past week it rebuilds ratings from only the weeks before, predicts that week, and scores each stats/market weight and shrink speed against the real margins. The <b>Auto</b> button uses whatever backtested best. With 60-odd FBS games a week it has something to say after Week 3.</p>
     <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
     <p><b>Model line.</b> Home rating − away rating + 2.5 pts home field (0 at a neutral site).</p>
@@ -214,6 +253,8 @@ const WEEK1_SUNDAY = new Date(YEAR, 7, 30);        // the Sunday after the Week 
 let CUR = Math.max(1, Math.min(16, 1 + Math.floor((Date.now() - WEEK1_SUNDAY) / 6048e5)));
 const HFA = 2.5, SD = 16, LEAN_MIN = 1.5, MARGIN_CAP = 35, FCS_R = -22, MAX_WEEK = 16, SHARE_MAX = 18;
 const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
+const KELLY_CAP = 0.05;                              // never suggest more than 5% of the bankroll on one bet, whatever the math says
+let VIEW = null;                                     // the week on screen; null = the current week (CUR)
 const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
                 set(k,v){ this.local(k,v); if(SYNC_KEYS.includes(k)) cloud.put(k,v); },
                 local(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
@@ -256,16 +297,28 @@ function reloadState(){                           // pull the merged state back 
   [...week1, ...week2].forEach(g => { rememberLines(g); registerOpen(g); }); render(); }
 function renderAuth(){ const box = document.getElementById("auth"); if(!box) return; if(!cloud.ready()){ box.innerHTML = ""; return; }
   const note = cloud.msg ? `<div class="note">${cloud.msg}</div>` : "";
-  if(cloud.user){ box.innerHTML = `<div class="who">Signed in as <b>${cloud.user.email}</b> · picks and bets follow you to every device</div><div class="btns"><button id="signout">Sign out</button></div>${note}`;
+  if(cloud.user){ box.innerHTML = `<div class="who"><span>Synced as <b>${cloud.user.email}</b></span><button class="linkish" id="signout">Sign out</button></div>${note}`;
     box.querySelector("#signout").onclick = () => cloud.signOut(); return; }
-  box.innerHTML = `<div class="who">Sign in to keep your picks and bet log on every device.</div><input id="authEmail" type="email" placeholder="email" autocomplete="username"><input id="authPw" type="password" placeholder="password (8+ characters)" autocomplete="current-password"><div class="btns"><button class="primary" id="signin">Sign in</button><button id="signup">Create account</button></div>${note}`;
+  if(!authOpen && !cloud.msg){                       // collapsed: one line instead of a form on every visit
+    box.innerHTML = `<div class="who"><span>Picks and bets stay on this device.</span><button class="linkish" id="authOpen">Sign in to sync</button></div>`;
+    box.querySelector("#authOpen").onclick = () => { authOpen = true; renderAuth(); box.querySelector("#authEmail")?.focus(); }; return; }
+  box.innerHTML = `<div class="who"><span>Sign in to keep your picks and bet log on every device.</span><button class="linkish" id="authClose">Hide</button></div><input id="authEmail" type="email" placeholder="email" autocomplete="username"><input id="authPw" type="password" placeholder="password (8+ characters)" autocomplete="current-password"><div class="btns"><button class="primary" id="signin">Sign in</button><button id="signup">Create account</button></div>${note}`;
   const em = () => box.querySelector("#authEmail").value.trim(), pw = () => box.querySelector("#authPw").value;
   box.querySelector("#signin").onclick = () => cloud.signIn(em(), pw()); box.querySelector("#signup").onclick = () => cloud.signUp(em(), pw());
+  box.querySelector("#authClose").onclick = () => { authOpen = false; cloud.msg = ""; renderAuth(); };
   box.querySelector("#authPw").addEventListener("keydown", e => { if(e.key === "Enter") cloud.signIn(em(), pw()); }); }
+let authOpen = false;
 let K_SHRINK = store.get("k", 2.33);                              // games-played shrink: n/(n+K) → 30% at 1 game, 63% at 4, 81% at 10
 let openers = store.get("openers", {}), graded = store.get("graded", {}), boxCache = store.get("box", {}), picks = store.get("picks", {});   // picks: side + line frozen at kickoff
 let betsDeleted = store.get("betsDeleted", []), bets = store.get("bets", []).filter(b => !betsDeleted.includes(b.id)), lastSeen = store.get("lastSeen", {}), lines = store.get("lines", {}), injuries = {}, teamIds = {}, bestMode = false, backoff = 1;
 let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", [])), filterMode = store.get("filter", "all");
+let viewOpts = store.get("view", {plays:false, hideFinals:false}), future = {}, geo = store.get("geo", {}), notifyOn = store.get("notify", false), alerted = store.get("alerted", {});
+const ratingCache = {};                              // week -> ratings built from only the weeks before it (for viewing past weeks honestly)
+const ratingsFor = wk => { if(wk == null || wk >= CUR) return ratings;
+  const key = `${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
+  return ratingCache[key] ||= buildRatings(week1.filter(x => x.final && x.week < wk)); };
+const histFor = wk => (wk == null || wk >= CUR) ? week1 : week1.filter(x => x.week < wk);   // what the model knew before that week
+const isFCSGame = g => !isFBS(g.home) || !isFBS(g.away);
 const saveBets = () => store.set("bets", bets);
 const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
 function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
@@ -429,17 +482,29 @@ function scoring(t, games = week1){
   const k = n/(n+K_SHRINK);                          // same trust curve as the ratings
   return {pf: LG_TEAM_PTS + k*(pf-LG_TEAM_PTS), pa: LG_TEAM_PTS + k*(pa-LG_TEAM_PTS), n};
 }
-function projectTotal(g){ const h = scoring(g.home), a = scoring(g.away);
+function projectTotal(g){ const H = histFor(g.week), h = scoring(g.home, H), a = scoring(g.away, H);
   return (h.pf + a.pa)/2 + (a.pf + h.pa)/2; }       // home expected pts + away expected pts
-function evalTotal(g, w){
-  if(g.ou == null) return null;
-  const model = projectTotal(g), blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
-  return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under"};
+/* ---------- weather: only the total moves; the side is the market's problem ---------- */
+function wxAdj(g){                                   // points to take off the projected total, and why
+  const w = g.wx; if(!w || g.final || g.state==="in") return {pts:0, text:"", bad:false};
+  let pts = 0; const why = [];
+  if(w.wind > 12){ const d = Math.min(6, 0.25*(w.wind - 12)); pts += d; why.push(`wind ${Math.round(w.wind)} mph`); }
+  if(w.pop >= 60 || w.precip >= 0.1){ pts += 2; why.push(`rain ${Math.round(w.pop)}%`); }
+  if(w.temp != null && w.temp < 25){ pts += 1.5; why.push(`${Math.round(w.temp)}°F`); }
+  return {pts, text: why.join(", "), bad: pts > 0};
 }
-const gamesPlayed = t => week1.filter(g => g.final && (g.home===t || g.away===t)).length;
-const lastGameTs = t => { const gs = week1.filter(x => x.final && (x.home===t || x.away===t) && x.ts); return gs.length ? Math.max(...gs.map(x=>x.ts)) : null; };
+const wxChip = g => { const w = g.wx; if(!w || g.final || g.state==="in") return ""; const a = wxAdj(g);
+  const bits = [`${Math.round(w.temp)}°`, `wind ${Math.round(w.wind)}`, w.pop >= 30 ? `rain ${Math.round(w.pop)}%` : null].filter(Boolean);
+  return `<span class="wx ${a.bad?"bad":""}" title="${w.indoor?"indoor":"forecast at kickoff, Open-Meteo"}${a.pts?` · total −${a.pts.toFixed(1)}`:""}">${bits.join(" · ")}</span>`; };
+function evalTotal(g, w){
+  if(g.ou == null || isFCSGame(g)) return null;      // no total play against an FCS prior either
+  const wx = wxAdj(g), model = projectTotal(g) - wx.pts, blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
+  return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under", wx};
+}
+const gamesPlayed = (t, games = week1) => games.filter(g => g.final && (g.home===t || g.away===t)).length;
+const lastGameTs = (t, before = Infinity) => { const gs = week1.filter(x => x.final && (x.home===t || x.away===t) && x.ts && x.ts < before); return gs.length ? Math.max(...gs.map(x=>x.ts)) : null; };
 function restAdj(g){                                 // + favors home. ~0.3 pts per day of rest edge, capped
-  const h = lastGameTs(g.home), a = lastGameTs(g.away); if(!h || !a || !g.ts) return {pts:0, text:""};
+  const h = lastGameTs(g.home, g.ts), a = lastGameTs(g.away, g.ts); if(!h || !a || !g.ts) return {pts:0, text:""};
   const rh = Math.round((g.ts-h)/864e5), ra = Math.round((g.ts-a)/864e5), d = Math.max(-5, Math.min(5, rh - ra));
   return {pts: 0.3*d, text: d ? `${d>0?g.home:g.away} +${Math.abs(d)} days rest` : ""};
 }
@@ -452,24 +517,26 @@ function injAdj(t){                                  // penalty in points for li
   return {pts: Math.min(6, pts), notes};
 }
 function evaluate(g, w){
-  const rh = ratings[g.home] ?? 0, ra = ratings[g.away] ?? 0;
-  const rest = restAdj(g), ih = injAdj(g.home), ia = injAdj(g.away);
+  const R = ratingsFor(g.week);                                        // a past week is scored with only what the model knew then
+  const rh = R[g.home] ?? 0, ra = R[g.away] ?? 0, fcs = isFCSGame(g);
+  const rest = restAdj(g), ih = g.week === CUR ? injAdj(g.home) : {pts:0,notes:[]}, ia = g.week === CUR ? injAdj(g.away) : {pts:0,notes:[]};
   const modelLine = rh - ra + (g.neutral ? 0 : HFA) + rest.pts - ih.pts + ia.pts;   // expected home margin; no home field at a neutral site
   const lk = g.final ? picks[gkey(g)] : null;                     // the pick this phone locked before kickoff, if it saw the game then
   const spread = lk ? lk.sp : (overrides[g.home+g.away] ?? g.spread); // home-relative, negative = home favored
   const market = spread == null ? null : -spread;    // market expected home margin
-  const blend = market == null ? modelLine : w*modelLine + (1-w)*market;
+  /* An FCS team's rating is a fixed prior, and a prior against a 50-point line makes absurd "value". Those games take the market number as-is. */
+  const blend = market == null ? modelLine : fcs ? market : w*modelLine + (1-w)*market;
   const pHome = winP(blend);
   const pMkt  = market == null ? null : winP(market);
   const edge  = market == null ? 0 : blend - market;
-  const pickHome = lk ? lk.ph : market == null ? null : edge >= 0;    // side the blend favors vs the number (or the locked side once final)
+  const pickHome = fcs ? null : lk ? lk.ph : market == null ? null : edge >= 0;    // side the blend favors vs the number (or the locked side once final)
   let ats = null;                                                      // "W" | "L" | "P" once the game is final
   if(pickHome != null && g.final){ const cover = (g.hs - g.as) + spread; ats = cover === 0 ? "P" : (cover > 0) === pickHome ? "W" : "L"; }
   const move = (g.open!=null && spread!=null) ? spread - g.open : 0;   // home-relative; negative = money on home
   const pCoverHome = spread == null ? null : coverP(blend, spread);
   const pCover = pickHome == null ? null : (pickHome ? pCoverHome : 1 - pCoverHome);   // chance the pick covers
   const evPer100 = pCover == null ? null : pCover*100*100/110 - (1-pCover)*100;        // $ EV per $100 at -110
-  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, locked: !!lk, hasRating: g.home in ratings && g.away in ratings};
+  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, fcs, locked: !!lk, hasRating: g.home in R && g.away in R};
 }
 
 /* ---------- render ---------- */
@@ -486,9 +553,10 @@ const money = n => n==null ? "—" : "$"+n.toFixed(2);
 const bankroll = () => Math.max(0, +document.getElementById("bank").value || 0);
 const dec = ml => ml > 0 ? 1 + ml/100 : 1 + 100/(-ml);
 function kelly(p, ml){ const b = dec(ml) - 1, f = (b*p - (1-p))/b; return Math.max(0, f); }
-const kellyText = (p, ml) => { const f = kelly(p, ml); if(f <= 0) return ""; const half = f/2 * bankroll(); return ` · ½-Kelly $${half.toFixed(0)} (${(f*100).toFixed(1)}% full)`; };
+const kellyStake = (p, ml) => { const f = kelly(p, ml); if(f <= 0) return {amt:0, f, capped:false}; const raw = f/2, capped = raw > KELLY_CAP; return {amt: Math.min(raw, KELLY_CAP) * bankroll(), f, capped}; };
+const kellyText = (p, ml) => { const k = kellyStake(p, ml); if(k.amt <= 0) return ""; return ` · ½-Kelly $${k.amt.toFixed(0)}${k.capped ? ` <span title="half-Kelly would be ${(k.f*50).toFixed(0)}% of the bankroll; capped at ${KELLY_CAP*100}%">(capped)</span>` : ` (${(k.f*100).toFixed(1)}% full)`}`; };
 function logBet(g, type, side, line, price, p){
-  const st = +(prompt(`Stake for ${side} ${type==="total"?line:type==="spread"?(line>0?"+":"")+line:mlText(price)} at ${mlText(price)}?`, Math.max(1, Math.round(kelly(p,price)/2*bankroll() || stake())) ) || 0);
+  const st = +(prompt(`Stake for ${side} ${type==="total"?line:type==="spread"?(line>0?"+":"")+line:mlText(price)} at ${mlText(price)}?`, Math.max(1, Math.round(kellyStake(p,price).amt || stake())) ) || 0);
   if(!st) return;
   bets.push({id: Date.now(), key: gkey(g), week: g.week, game: `${g.away} @ ${g.home}`, home: g.home, away: g.away, type, side, line, price, stake: st, p, ts: Date.now(), closing: null, result: null, profit: 0});
   saveBets(); render();
@@ -522,23 +590,54 @@ function renderLedger(){
   const clvs = bets.map(clvOf).filter(v=>v!=null), avgClv = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
   const openB = bets.filter(b=>!b.result);
   const row = b => `<tr><td>Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?"—":(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:"open"}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`;
+  const settled = done.slice().sort((a,b) => a.ts - b.ts); let run = 0; const curve = settled.map(b => (run += b.profit));
   box.innerHTML = `<h2>Bet log</h2>
-    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)} pts</b></span><span>Open <b>${openB.length}</b></span></div>
+    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)+" pts"}</b></span><span>Open <b>${openB.length}</b></span></div>
+    ${curve.length >= 2 ? lineChart(curve.map((v,i) => ({x:i+1, y:v, label:`Bet ${i+1}: ${settled[i].side} · ${settled[i].result} · running ${v>=0?"+":"−"}$${Math.abs(v).toFixed(0)}`, cls: settled[i].result})), {zero:true, fmt: v => (v>=0?"+":"−")+"$"+Math.abs(v).toFixed(0), title:"Running profit, bet by bet"}) : ""}
     <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${bets.slice().reverse().map(row).join("")}</table></div>
+    <div class="btns"><button id="csv">Export CSV</button></div>
     <p class="note">CLV = closing-line value: how many points better your number was than the line at kickoff. Beating the close consistently is the earliest sign a model is real; a W–L record needs hundreds of bets to say the same thing. 1 unit = your bet-size field.</p>`
     : `<p>No bets logged. Tap <b>Log</b> on a play to record it (side, price, stake, time). The log grades itself, tracks profit in dollars and units, and measures closing-line value.</p>`}`;
   box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { const id = +b.dataset.del; betsDeleted.push(id); store.set("betsDeleted", betsDeleted); bets = bets.filter(x => x.id !== id); saveBets(); render(); }));
+  box.querySelector("#csv")?.addEventListener("click", exportCsv);
 }
-const blendFor = g => { const w = +document.getElementById("w").value/100; if(g.week === CUR){ return evaluate(g, w).blend; } const sp = overrides["w1"+g.home+g.away] ?? g.spread; return sp==null ? 0 : -sp; };
-const payoutTable = (g, pHome, pickHome, spread) => { const st = stake(); if(!st) return "";
+function exportCsv(){
+  const esc = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : String(v);
+  const head = ["placed","week","game","type","side","line","price","stake","model_prob","closing","clv","result","profit"];
+  const rows = bets.slice().sort((a,b)=>a.ts-b.ts).map(b => [new Date(b.ts).toISOString(), b.week, b.game, b.type, b.side, b.line, b.price, b.stake, b.p?.toFixed(3), b.closing, clvOf(b)?.toFixed(1), b.result || "open", b.result ? b.profit.toFixed(2) : ""]);
+  const csv = [head, ...rows].map(r => r.map(esc).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = `saturday-edge-bets-${YEAR}.csv`; a.click();
+}
+/* ---------- one small SVG line chart, used for the bet log and the season view (single series, so no legend) ---------- */
+function lineChart(pts, o = {}){
+  if(!pts.length) return "";
+  const W = 600, H = 150, L = 44, R = 12, T = 18, B = 26;
+  const ys = pts.map(p => p.y); let lo = Math.min(...ys, o.zero ? 0 : Infinity), hi = Math.max(...ys, o.zero ? 0 : -Infinity); if(hi === lo){ hi += 1; lo -= 1; }
+  if(o.min != null) lo = Math.min(lo, o.min); if(o.max != null) hi = Math.max(hi, o.max);
+  const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const X = i => L + (pts.length === 1 ? 0 : i * (W - L - R) / (pts.length - 1)), Y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad];
+  const f = o.fmt || (v => v.toFixed(0));
+  const path = pts.map((p,i) => `${i?"L":"M"}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(" ");
+  const step = Math.max(1, Math.ceil(pts.length / 8));
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.title || ""}">
+    ${ticks.map(v => `<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text x="${L-6}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end">${f(v)}</text>`).join("")}
+    ${o.zero && lo < 0 && hi > 0 ? `<line class="zero" x1="${L}" x2="${W-R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>` : ""}
+    <path class="ln" d="${path}"/>
+    ${pts.map((p,i) => `<circle class="pt ${p.cls||""}" cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="4"><title>${p.label || p.y}</title></circle>`).join("")}
+    ${pts.map((p,i) => i % step === 0 || i === pts.length-1 ? `<text x="${X(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${p.x}</text>` : "").join("")}
+  </svg>`;
+}
+const payoutTable = (g, pHome, pickHome, spread, blend) => { const st = stake(); if(!st) return "";
+  const blendFor = () => blend ?? (spread==null ? 0 : -spread);
   const iH = implied(g.mlH), iA = implied(g.mlA);
   const hold = iH!=null && iA!=null ? iH + iA : null;                                  // > 1: the book's vig
   const fH = hold ? iH/hold : iH, fA = hold ? iA/hold : iA;                            // de-vigged fair probabilities
   const valH = fH!=null && pHome!=null ? pHome - fH : null, valA = fA!=null && pHome!=null ? (1-pHome) - fA : null;
   const ev = (p, ml) => p==null || ml==null ? "" : (() => { const v = p*profit(ml,st) - (1-p)*st; return `<div class="note">EV ${v>=0?"+":"−"}$${Math.abs(v).toFixed(2)}</div>`; })();
   const tag = v => v==null ? "" : v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : "";
-  const pc = spread==null ? null : (pickHome ? coverP(blendFor(g), spread) : 1 - coverP(blendFor(g), spread));
-  const sp = spread==null ? "" : `<tr><td>Spread pick ${pickHome?g.home:g.away} ${(pickHome?spread:-spread)>0?"+":""}${(pickHome?spread:-spread).toFixed(1)} (-110)${ev(pc, -110)}</td><td>${money(st*100/110)}</td><td>${pct(BREAK_EVEN)}</td><td>${pc==null?"—":pct(pc)}</td></tr>`;
+  const pc = spread==null || pickHome==null ? null : (pickHome ? coverP(blendFor(), spread) : 1 - coverP(blendFor(), spread));
+  const sp = spread==null || pickHome==null ? "" : `<tr><td>Spread pick ${pickHome?g.home:g.away} ${(pickHome?spread:-spread)>0?"+":""}${(pickHome?spread:-spread).toFixed(1)} (-110)${ev(pc, -110)}</td><td>${money(st*100/110)}</td><td>${pct(BREAK_EVEN)}</td><td>${pc==null?"—":pct(pc)}</td></tr>`;
   const t = evalTotal(g, +document.getElementById("w").value/100);
   const be = pct(100/210);                                                   // -110 break-even
   return `<table><tr><th>$${st} bet · profit if it hits</th><th>Profit</th><th>Fair</th><th>Model</th></tr>
@@ -553,23 +652,28 @@ const tagT = (g, over) => { const t = evalTotal(g, +document.getElementById("w")
   return v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : ""; };
 const spreadText = (g,s) => s==null ? "no line" : s<0 ? `${g.home} ${s.toFixed(1)}` : s>0 ? `${g.away} ${(-s).toFixed(1)}` : "pick";
 
+const viewWeek = () => VIEW ?? CUR;
+function slateFor(wk){ if(wk === CUR) return week2; if(wk < CUR) return week1.filter(g => g.week === wk).slice().sort((a,b) => a.ts - b.ts); return future[wk] || []; }
+const teamBlock = (t, side, right) => `<div class="team ${right?"right":""}">${names[t]?.logo ? `<img class="logo" src="${names[t].logo}" alt="" loading="lazy" onerror="this.remove()">` : ""}<div>${t}<small>${nameOf(t)} · ${side}</small></div></div>`;
+const countdown = ts => { const d = ts - Date.now(); if(d <= 0 || d > 36e5*30) return ""; const h = Math.floor(d/36e5), m = Math.floor((d%36e5)/6e4); return h ? `${h}h ${m}m` : `${m}m`; };
 function render(){
-  const w = +document.getElementById("w").value/100;
-  document.getElementById("hint").textContent = `Weighting: ${Math.round(w*100)}% season stats (through Week ${Math.max(1,CUR-1)}) / ${Math.round((1-w)*100)}% market line. Gold = away, green = home, dark tick = the betting line. Tap a game's header for the numbers.`;
+  const w = +document.getElementById("w").value/100, VW = viewWeek(), past = VW < CUR, fut = VW > CUR;
+  document.getElementById("hint").textContent = `Weighting: ${Math.round(w*100)}% season stats (through Week ${Math.max(1,VW-1)}) / ${Math.round((1-w)*100)}% market line. Gold = away, green = home, dark tick = the betting line. Tap a game's header for the numbers.`;
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
 
   const open = new Set([...document.querySelectorAll(".game.open")].map(e=>e.dataset.key));
-  const rec = {W:0,L:0,P:0};
-  let pickDirty = false;
-  for(const g of week2){                           // whole week, whatever filter or Best-bets view is on
+  let pickDirty = false, gradeDirty = false;
+  for(const g of week2){                           // the live week, whatever is on screen: (re)freeze picks and grade finals
     const e = evaluate(g, w), k = gkey(g);
+    if(e.fcs){ if(picks[k]){ delete picks[k]; pickDirty = true; } if(graded[k]){ delete graded[k]; gradeDirty = true; } continue; }   // FCS games no longer count
     if(!g.final && g.state !== "in" && e.pickHome != null && e.spread != null){   // still pre-kickoff: (re)freeze the pick and the line it was made against
       const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100)}; pickDirty = true; } }
-    if(e.ats){ rec[e.ats]++; if(graded[k] !== e.ats){ graded[k] = e.ats; store.set("graded", graded); } }
+    if(e.ats && graded[k] !== e.ats){ graded[k] = e.ats; gradeDirty = true; }
   }
-  if(pickDirty) store.set("picks", picks);
+  for(const g of week1) if(isFCSGame(g) && graded[gkey(g)]){ delete graded[gkey(g)]; gradeDirty = true; }   // scrub FCS grades from earlier weeks too
+  if(pickDirty) store.set("picks", picks); if(gradeDirty) store.set("graded", graded);
   const wrap = document.getElementById("games"); wrap.innerHTML = "";
-  for(const g of week1.filter(x=>!x.final)){
+  if(!past && !fut) for(const g of week1.filter(x=>!x.final)){
     const h = document.createElement("div"); h.className="day"; h.innerHTML = `Week ${g.week ?? CUR-1} · ${g.day} <span>${g.state==="in"?"in progress":g.time}</span>`; wrap.appendChild(h);
     const inPlay = g.state==="in";
     const card = document.createElement("div"); card.className = "game" + (open.has("w1"+g.home+g.away)?" open":""); card.dataset.key = "w1"+g.home+g.away; card.tabIndex = 0;
@@ -582,10 +686,10 @@ function render(){
       cover = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${favHome?g.home:g.away} ${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(c).toFixed(1)}</span>`; }
     card.innerHTML = `
       <div class="top">
-        <div class="team">${g.away}<small>${nameOf(g.away)} · away</small></div>
+        ${teamBlock(g.away, "away")}
         <div class="pct ${wp!=null&&wp<.5?"":"dim"}">${wp==null?"—":pct(1-wp)}</div>
         <div class="pct ${wp!=null&&wp>=.5?"":"dim"}">${wp==null?"—":pct(wp)}</div>
-        <div class="team right">${g.home}<small>${nameOf(g.home)} · ${g.neutral?"neutral":"home"}</small></div>
+        ${teamBlock(g.home, g.neutral?"neutral":"home", true)}
       </div>
       ${inPlay ? `<div class="score live"><span>${g.poss===g.away?"● ":""}${g.as}</span><span class="clock">LIVE · ${g.clock}${g.down?` · ${g.down}`:""}</span><span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : `<div class="score"><span>${g.away}</span><span class="clock">kickoff ${g.time}</span><span>${g.home}</span></div>`}
       ${wp!=null?`<div class="bar"><div class="home" style="width:${(wp*100).toFixed(1)}%"></div>${mkt!=null?`<div class="tick" style="left:${((1-mkt)*100).toFixed(1)}%"></div>`:""}</div>`:""}
@@ -604,39 +708,47 @@ function render(){
     wrap.appendChild(card);
   }
   let lastDay = null;
+  const all = slateFor(VW);
+  const isPlay = g => { const e = evaluate(g,w), t = evalTotal(g,w); return (e.pCover ?? 0) >= PLAY_MIN || (t ? Math.max(t.pOver, 1-t.pOver) : 0) >= PLAY_MIN; };
   let slate = bestMode
-    ? week2.map(g => { const e = evaluate(g,w), t = evalTotal(g,w); const best = Math.max(e.pCover ?? 0, t ? Math.max(t.pOver, 1-t.pOver) : 0); return {g, best}; })
+    ? all.map(g => { const e = evaluate(g,w), t = evalTotal(g,w); const best = Math.max(e.pCover ?? 0, t ? Math.max(t.pOver, 1-t.pOver) : 0); return {g, best}; })
         .filter(x => x.best >= PLAY_MIN && !x.g.final).sort((a,b) => b.best - a.best).map(x => x.g)
-    : week2;
+    : all;
   slate = slate.filter(inFilter);
-  renderChips();
-  if(!week2.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = live ? `ESPN returned no FBS games for Week ${CUR}.` : "No games loaded yet. This app has no built-in slate — it needs to reach ESPN. Tap Refresh, or check that you're online."; wrap.appendChild(h); }
-  else if(!slate.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = bestMode ? "No plays clear the 54.5% bar in this filter." : "No games match this filter this week."; wrap.appendChild(h); }
+  if(viewOpts.plays && !bestMode) slate = slate.filter(isPlay);
+  const finals = viewOpts.hideFinals && !bestMode ? slate.filter(g => g.final) : [];
+  if(finals.length) slate = slate.filter(g => !g.final);
+  renderChips(all);
+  if(!all.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = fut ? (future[VW] ? `ESPN has no Week ${VW} slate posted yet.` : `Loading Week ${VW} from ESPN…`) : live ? `ESPN returned no FBS games for Week ${VW}.` : "No games loaded yet. This app has no built-in slate — it needs to reach ESPN. Tap Refresh, or check that you're online."; wrap.appendChild(h); }
+  else if(!slate.length && !finals.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = bestMode ? "No plays clear the 54.5% bar in this filter." : viewOpts.plays ? "No plays in this filter this week." : "No games match this filter this week."; wrap.appendChild(h); }
   if(bestMode){ const h = document.createElement("div"); h.className="record"; h.style.display="block"; h.textContent = slate.length ? `${slate.length} plays this week, strongest first` : "No plays clear the 54.5% bar this week"; wrap.appendChild(h); }
+  const H = histFor(VW);
   for(const g of slate){
-    if(g.day !== lastDay){ const h = document.createElement("div"); h.className="day"; h.innerHTML = `${lastDay===null?`Week ${CUR} · `:""}${g.day}`; wrap.appendChild(h); lastDay = g.day; }
+    if(g.day !== lastDay){ const h = document.createElement("div"); h.className="day"; h.innerHTML = `${lastDay===null?`Week ${VW} · `:""}${g.day}`; wrap.appendChild(h); lastDay = g.day; }
     const e = evaluate(g, w);
     const key = g.home+g.away;
     const fav = e.pHome >= .5 ? g.home : g.away;
-    const favP = e.pHome >= .5 ? e.pHome : 1-e.pHome;
     let lean = `<div class="lean none">${g.final ? "Not graded — ESPN dropped the line at kickoff and this app never saw it. Type the closing spread below and it will grade." : "Enter a spread below to compare"}</div>`;
-    if(e.market != null){
+    if(e.market != null && e.fcs){
+      const fcsTeam = !isFBS(g.away) ? g.away : g.home;
+      lean = `<div class="lean none">${fcsTeam} is FCS — market number only, no play.${g.final ? ` <span class="grade">${g.away} ${g.as}–${g.hs} ${g.home}</span>` : ""}</div>`;
+    } else if(e.market != null){
       const side = e.pickHome ? g.home : g.away;
       const num  = e.pickHome ? e.spread : -e.spread;
       const strong = e.pCover >= PLAY_MIN;
       let grade = e.ats ? ` <span class="grade ${e.ats}">${e.ats==="P"?"PUSH":e.ats==="W"?"WIN":"LOSS"} · ${g.away} ${g.as}–${g.hs} ${g.home}</span>${e.locked?` <span style="opacity:.6">locked pre-kickoff</span>`:""}` : "";
       if(!e.ats && g.state==="in"){ const cover = (g.hs - g.as) + e.spread; const ok = cover===0 ? null : (cover>0)===e.pickHome;
         grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
-      const canLog = !g.final && g.state!=="in";
-      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${strong?"":" (pass)"}${strong?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
+      const canLog = !g.final && g.state!=="in" && !past;
+      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${strong?"":" (pass)"}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
     }
     const t = evalTotal(g, w);
     if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = pP >= PLAY_MIN;
       let tg = "";
       if(g.final){ const d = (g.hs+g.as) - g.ou; const ok = d===0 ? null : (d>0) === (t.pick==="Over"); tg = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"PUSH":ok?"WIN":"LOSS"}</span>`; }
       else if(g.state==="in"){ tg = ` <span class="grade">${g.hs+g.as} so far</span>`; }
-      const canLogT = !g.final && g.state!=="in";
-      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${tStrong?"":" (pass)"}${tStrong?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
+      const canLogT = !g.final && g.state!=="in" && !past;
+      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${t.wx.pts?` <span class="wx bad" title="${t.wx.text}">(wx −${t.wx.pts.toFixed(1)})</span>`:""}${tStrong?"":" (pass)"}${tStrong&&!past?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
     const card = document.createElement("div");
     card.className = "game" + (e.pCover >= PLAY_MIN && !e.ats ? " flag":"") + (open.has(key)?" open":"");
     card.dataset.key = key; card.tabIndex = 0;
@@ -645,26 +757,26 @@ function render(){
         <span>${g.poss===g.away?"● ":""}${g.as}</span>
         <span class="clock">${inPlay ? `LIVE · ${g.clock}${g.down?` · ${g.down}`:""}${g.tv?` · ${g.tv}`:""}` : `FINAL${g.tv?` · ${g.tv}`:""}`}</span>
         <span>${g.hs}${g.poss===g.home?" ●":""}</span></div>` : "";
-    const kick = (!inPlay && !g.final) ? `<div class="kick"><span>${g.day.split(",")[0]} <b>${g.time}</b>${g.neutral?" · neutral site":""}</span><span class="tv">${g.tv || "TV TBA"}</span></div>` : "";
+    const cd = (!inPlay && !g.final) ? countdown(g.ts) : "";
+    const kick = (!inPlay && !g.final) ? `<div class="kick"><span>${g.day.split(",")[0]} <b>${g.time}</b>${cd?` · <span class="countdown" data-kick="${g.ts}">in ${cd}</span>`:""}${g.neutral?" · neutral site":""}</span><span style="display:flex;gap:6px;align-items:center">${wxChip(g)}<span class="tv">${g.tv || "TV TBA"}</span></span></div>` : "";
     const liveWP = inPlay && g.liveWP!=null ? `<div class="livewp">ESPN in-game win prob: ${g.home} ${Math.round(g.liveWP*100)}% · ${g.away} ${Math.round((1-g.liveWP)*100)}%</div>` : "";
+    const tape = tapeRows(g, H);
     card.innerHTML = `
       <div class="top">
-        <div class="team">${g.away}<small>${nameOf(g.away)} · away</small></div>
+        ${teamBlock(g.away, "away")}
         <div class="pct ${fav===g.away?"":"dim"}">${pct(1-e.pHome)}</div>
         <div class="pct ${fav===g.home?"":"dim"}">${pct(e.pHome)}</div>
-        <div class="team right">${g.home}<small>${nameOf(g.home)} · ${g.neutral?"neutral":"home"}</small></div>
+        ${teamBlock(g.home, g.neutral?"neutral":"home", true)}
       </div>
       ${kick}${scoreLine}${liveWP}
       <div class="bar"><div class="home" style="width:${(e.pHome*100).toFixed(1)}%"></div>${e.pMkt!=null?`<div class="tick" style="left:${((1-e.pMkt)*100).toFixed(1)}%" title="market"></div>`:""}</div>
-      <div class="legend"><span>Line: <b>${spreadText(g,e.spread)}</b>${moveText(g,e)}</span><span>${ouText(g)}</span><span>Blend: <b>${fav} by ${Math.abs(e.blend).toFixed(1)}</b></span></div>
+      <div class="legend"><span>Line: <b>${spreadText(g,e.spread)}</b>${moveText(g,e)}</span><span>${ouText(g)}</span><span>${e.fcs?"Market":"Blend"}: <b>${fav} by ${Math.abs(e.blend).toFixed(1)}</b></span></div>
       ${lean}
       <div class="detail">
         <table>
-          <tr><th></th><th>${g.away}</th><th>${g.home}</th></tr>
-          <tr><td>Rating (${gamesPlayed(g.away)}g / ${gamesPlayed(g.home)}g)</td><td>${e.hasRating?fmt(ratings[g.away]):"—"}</td><td>${e.hasRating?fmt(ratings[g.home]):"—"}</td></tr>
-          <tr><td>Last result</td><td>${w1line(g.away)}</td><td>${w1line(g.home)}</td></tr>
-          <tr><td>Avg yds / play</td><td>${statCell("ypp",g.away)}</td><td>${statCell("ypp",g.home)}</td></tr>
-          <tr><td>Avg turnovers</td><td>${statCell("to",g.away)}</td><td>${statCell("to",g.home)}</td></tr>
+          <tr><th>Tale of the tape</th><th>${g.away}</th><th>${g.home}</th></tr>
+          <tr><td>Rating (${gamesPlayed(g.away,H)}g / ${gamesPlayed(g.home,H)}g)</td><td>${e.hasRating?fmt(ratingsFor(g.week)[g.away]):"—"}</td><td>${e.hasRating?fmt(ratingsFor(g.week)[g.home]):"—"}</td></tr>
+          ${tape}
           ${g.live ? `<tr><th>This game</th><th></th><th></th></tr>
           <tr><td>Total yards</td><td>${g.live.yds?.[g.away] ?? "—"}</td><td>${g.live.yds?.[g.home] ?? "—"}</td></tr>
           <tr><td>Yds / play</td><td>${g.live.ypp?.[g.away]?.toFixed(1) ?? "—"}</td><td>${g.live.ypp?.[g.home]?.toFixed(1) ?? "—"}</td></tr>
@@ -678,34 +790,106 @@ function render(){
           <tr><td>Blended expected margin</td><td>${fmt(e.blend)}${g.neutral?" · neutral site":""}</td></tr>
           <tr><td>Market implied win %</td><td>${e.pMkt==null?"—":pct(e.pMkt)+" "+g.home}</td></tr>
           <tr><td>Moneyline</td><td>${g.away} ${mlText(g.mlA)} · ${g.home} ${mlText(g.mlH)}</td></tr>
-          ${t?`<tr><td>Projected total (stats only)</td><td>${t.model.toFixed(1)} vs O/U ${g.ou}</td></tr>`:""}
+          ${t?`<tr><td>Projected total (stats only)</td><td>${t.model.toFixed(1)} vs O/U ${g.ou}${t.wx.pts?` · weather −${t.wx.pts.toFixed(1)} (${t.wx.text})`:""}</td></tr>`:""}
+          ${g.wx?`<tr><td>Forecast at kickoff</td><td>${g.wx.indoor?"indoor":`${Math.round(g.wx.temp)}°F · wind ${Math.round(g.wx.wind)} mph${g.wx.gust>g.wx.wind+8?` (gusts ${Math.round(g.wx.gust)})`:""} · rain ${Math.round(g.wx.pop)}%`}${g.venue?.name?` · ${g.venue.name}`:""}</td></tr>`:""}
         </table>
-        ${payoutTable(g, e.pHome, e.pickHome, e.spread)}
+        ${payoutTable(g, e.pHome, e.pickHome, e.spread, e.blend)}
         <div class="spreadrow"><label for="sp-${key}">${g.home} spread</label>
           <input id="sp-${key}" type="number" step="0.5" inputmode="decimal" placeholder="-3.5" value="${overrides[key] ?? (g.spread ?? "")}">
           <span class="note">negative = ${g.home} favored</span></div>
-        ${!isFBS(g.home)||!isFBS(g.away)?`<div class="note">${!isFBS(g.away)?g.away:g.home} is an FCS team — its rating is a fixed prior, so treat the model line as a guess.</div>`:e.hasRating?"":`<div class="note">One of these teams has no completed game yet, so the model line is home field only.</div>`}
+        ${e.fcs?`<div class="note">${!isFBS(g.away)?g.away:g.home} is an FCS team — its rating is a fixed prior, so this game gets no model pick and no stake. The number shown is the market's.</div>`:e.hasRating?"":`<div class="note">One of these teams has no completed game yet, so the model line is home field only.</div>`}
       </div>`;
     bindCard(card, ev => { const v = ev.target.value; if(v==="") delete overrides[key]; else overrides[key] = +v; store.set("overrides", overrides); });
     bindLogs(card, g, e.pHome);
     wrap.appendChild(card);
   }
+  if(finals.length){ const rec = {W:0,L:0,P:0}; for(const g of finals){ const a = evaluate(g,w).ats; if(a) rec[a]++; }
+    const h = document.createElement("div"); h.className = "finals empty"; h.innerHTML = `${finals.length} final${finals.length>1?"s":""} hidden${rec.W+rec.L?` · model went ${rec.W}–${rec.L}${rec.P?"–"+rec.P:""} ATS in them`:""} · <button class="mini" id="showFinals">Show</button>`;
+    h.querySelector("#showFinals").addEventListener("click", () => { viewOpts.hideFinals = false; store.set("view", viewOpts); render(); }); wrap.appendChild(h); }
+  const rec = {W:0,L:0,P:0}; for(const g of all){ const a = evaluate(g,w).ats; if(a) rec[a]++; }
   const n = rec.W+rec.L+rec.P;
-  const season = {W:0,L:0,P:0}; for(const k in graded){ if(k.startsWith(`${YEAR}-`) && !k.startsWith(`${YEAR}-w${CUR}-`)) season[graded[k]] = (season[graded[k]]||0)+1; }
+  const season = {W:0,L:0,P:0}; for(const k in graded){ if(k.startsWith(`${YEAR}-`) && !k.startsWith(`${YEAR}-w${VW}-`)) season[graded[k]] = (season[graded[k]]||0)+1; }
   const sN = season.W+season.L+season.P;
-  document.getElementById("record").innerHTML = `Week ${CUR} ATS: <b>${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}</b>${n?"":" · grades as games go final"}` +
-    (sN ? ` &nbsp;·&nbsp; Prior weeks: <b>${season.W}–${season.L}${season.P?"–"+season.P:""}</b>` : "");
-  const days = week2.map(g=>g.ts).filter(Boolean); const md = t => new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  document.getElementById("wk").textContent = `Week ${CUR}` + (days.length ? ` · ${md(Math.min(...days))}${Math.max(...days)-Math.min(...days) > 864e5 ? "–" + md(Math.max(...days)).replace(/^\w+ /,"") : ""}` : "");
-  document.title = `Saturday Edge — Week ${CUR}`;
-  renderLedger(); renderMovers();
+  document.getElementById("record").innerHTML = `Week ${VW} ATS: <b>${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}</b>${n?"":fut?" · no games played yet":" · grades as games go final"}` +
+    (sN ? ` &nbsp;·&nbsp; ${past||fut?"Other":"Prior"} weeks: <b>${season.W}–${season.L}${season.P?"–"+season.P:""}</b>` : "");
+  const days = all.map(g=>g.ts).filter(Boolean); const md = t => new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  const range = days.length ? ` · ${md(Math.min(...days))}${Math.max(...days)-Math.min(...days) > 864e5 ? "–" + md(Math.max(...days)).replace(/^\w+ /,"") : ""}` : "";
+  document.getElementById("wk").textContent = `Week ${VW}${range}`;
+  document.getElementById("wlabel").innerHTML = `Week ${VW}<small>${range.replace(/^ · /,"")}</small>${past?`<span class="past">as the model saw it</span>`:fut?`<span class="past">early lines</span>`:""}`;
+  document.getElementById("wprev").disabled = VW <= 1; document.getElementById("wnext").disabled = VW >= MAX_WEEK;
+  document.getElementById("wprev").textContent = `◀ Wk ${VW-1}`; document.getElementById("wnext").textContent = `Wk ${VW+1} ▶`;
+  document.getElementById("sbWeek").textContent = `Wk ${VW}`;
+  document.getElementById("sbInfo").textContent = `ATS ${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}${sN?` · season ${season.W+rec.W}–${season.L+rec.L}`:""}${week2.filter(g=>g.state==="in").length?` · ${week2.filter(g=>g.state==="in").length} live`:""}`;
+  document.title = `Saturday Edge — Week ${VW}`;
+  renderLedger(); renderMovers(); renderSeason();
 }
-function renderChips(){
+function tapeRows(g, H){                             // the "why" behind the number: form, pace, ATS record, scoring
+  const cell = (k, t) => statCell(k, t, 1, H);
+  const atsRec = t => { let W = 0, L = 0; for(const x of H){ if(!x.final || x.spread == null || (x.home!==t && x.away!==t) || isFCSGame(x)) continue;
+      const cov = (x.hs - x.as) + x.spread; if(cov === 0) continue; ((cov > 0) === (x.home === t)) ? W++ : L++; } return W+L ? `${W}–${L}` : "—"; };
+  const form = t => { const gs = H.filter(x => x.final && (x.home===t || x.away===t)).sort((a,b)=>(a.ts||0)-(b.ts||0)).slice(-3);
+    return gs.length ? gs.map(x => { const me = x.home===t?x.hs:x.as, them = x.home===t?x.as:x.hs; return `<span class="grade ${me>them?"W":"L"}" style="margin-left:2px">${me>them?"W":"L"}</span>`; }).join("") : "—"; };
+  const sc = t => { const s = scoring(t, H); return s.n ? `${s.pf.toFixed(0)} / ${s.pa.toFixed(0)}` : "—"; };
+  return `<tr><td>Last 3</td><td>${form(g.away)}</td><td>${form(g.home)}</td></tr>
+    <tr><td>Last result</td><td>${w1line(g.away,H)}</td><td>${w1line(g.home,H)}</td></tr>
+    <tr><td>ATS this season</td><td>${atsRec(g.away)}</td><td>${atsRec(g.home)}</td></tr>
+    <tr><td>Avg yds / play</td><td>${cell("ypp",g.away)}</td><td>${cell("ypp",g.home)}</td></tr>
+    <tr><td>Avg turnovers</td><td>${cell("to",g.away)}</td><td>${cell("to",g.home)}</td></tr>
+    <tr><td>Pts for / against (adj.)</td><td>${sc(g.away)}</td><td>${sc(g.home)}</td></tr>`;
+}
+/* ---------- season view: where the model has actually had an edge ---------- */
+function renderSeason(){
+  const box = document.getElementById("season"); if(!box) return;
+  const w = +document.getElementById("w").value/100;
+  const games = [...week1, ...week2].filter(g => g.final && g.spread != null && !isFCSGame(g));
+  if(!games.length){ box.innerHTML = `<h2>Season so far</h2><p>Records by week and by situation appear once games have gone final.</p>`; return; }
+  const rows = games.map(g => { const e = evaluate(g, w); const t = evalTotal(g, w); let tr = null;
+    if(t){ const d = (g.hs+g.as) - g.ou; tr = d===0 ? "P" : (d>0)===(t.pick==="Over") ? "W" : "L"; }
+    return {g, e, t, tr, play: (e.pCover ?? 0) >= PLAY_MIN, tPlay: t ? Math.max(t.pOver, 1-t.pOver) >= PLAY_MIN : false}; }).filter(r => r.e.ats);
+  const tally = list => { const r = {W:0,L:0,P:0}; for(const x of list) r[x]++; return r; };
+  const rec = r => `${r.W}–${r.L}${r.P?"–"+r.P:""}`;
+  const pctW = r => r.W+r.L ? Math.round(100*r.W/(r.W+r.L)) : null;
+  const split = (label, list, key = x => x.e.ats) => { const r = tally(list.map(key).filter(Boolean)); const p = pctW(r);
+    return `<div class="split"><small>${label}</small><b class="${p==null?"":p>=52.4?"pos":"neg"}">${rec(r)}</b><span>${p==null?"":p+"%"}</span></div>`; };
+  const P4 = g => POWER.includes(String(confOf(g.home))) && POWER.includes(String(confOf(g.away)));
+  const weeks = [...new Set(rows.map(r => r.g.week))].sort((a,b)=>a-b);
+  const byWeek = weeks.map(wk => { const r = tally(rows.filter(x => x.g.week===wk).map(x => x.e.ats)); const pl = tally(rows.filter(x => x.g.week===wk && x.play).map(x => x.e.ats)); return {wk, r, pl}; });
+  let units = 0; const curve = byWeek.map(x => { units += x.pl.W*100/110 - x.pl.L; return {x:`Wk ${x.wk}`, y:+units.toFixed(2), label:`Week ${x.wk}: plays ${rec(x.pl)} · all picks ${rec(x.r)} · running ${units>=0?"+":""}${units.toFixed(1)}u`, cls: x.pl.W >= x.pl.L ? "W" : "L"}; });
+  const plays = rows.filter(r => r.play), tot = rows.filter(r => r.tr), tPlays = tot.filter(r => r.tPlay);
+  box.innerHTML = `<h2>Season so far</h2>
+    <p>Every final with a line, re-scored the walk-forward way: each week predicted from only the weeks before it, at the current ${Math.round(w*100)}% stats weight (locked pre-kickoff picks are used where this device saw them). Plays are picks that cleared ${Math.round(PLAY_MIN*100)}%; a 52.4% hit rate is break-even at -110.</p>
+    ${curve.length >= 2 ? lineChart(curve, {zero:true, fmt: v => (v>=0?"+":"")+v.toFixed(0)+"u", title:"Running units on plays, flat 1u each, by week"}) : ""}
+    <div class="splits">
+      ${split("All picks", rows)}${split("Plays only", plays)}${split("Passes", rows.filter(r => !r.play))}
+      ${split("Favorites", rows.filter(r => r.e.pickHome === (r.e.spread < 0)))}${split("Underdogs", rows.filter(r => r.e.pickHome !== (r.e.spread < 0)))}
+      ${split("Home side", rows.filter(r => r.e.pickHome))}${split("Away side", rows.filter(r => !r.e.pickHome))}
+      ${split("Power 4 vs P4", rows.filter(r => P4(r.g)))}${split("Everything else", rows.filter(r => !P4(r.g)))}
+      ${split("Totals, all", tot, x => x.tr)}${split("Totals, plays", tPlays, x => x.tr)}
+    </div>
+    <div class="tablewrap"><table><tr><th>Week</th><th>All picks</th><th>Plays</th><th>Hit %</th></tr>${byWeek.map(x => `<tr><td>Week ${x.wk}</td><td>${rec(x.r)}</td><td>${rec(x.pl)}</td><td>${pctW(x.pl)==null?"—":pctW(x.pl)+"%"}</td></tr>`).join("")}</table></div>
+    <p class="note">Small samples swing wildly — a 12–8 split on twenty games is noise. Watch the plays-only line and the totals line over the season; the others are for spotting where the number is systematically off.</p>`;
+}
+function renderChips(all = week2){
   const box = document.getElementById("chips"); if(!box) return;
-  const counts = {}; for(const [id] of CHIPS){ const keep = filterMode; filterMode = id; counts[id] = week2.filter(inFilter).length; filterMode = keep; }
+  const counts = {}; for(const [id] of CHIPS){ const keep = filterMode; filterMode = id; counts[id] = all.filter(inFilter).length; filterMode = keep; }
   box.innerHTML = CHIPS.map(([id,label]) => `<button type="button" data-f="${id}" class="${filterMode===id?"on":""}" aria-pressed="${filterMode===id}">${label}${counts[id]?` <span style="opacity:.7">${counts[id]}</span>`:""}</button>`).join("");
   box.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { filterMode = b.dataset.f; store.set("filter", filterMode); render(); }));
+  const vb = document.getElementById("viewchips"); if(!vb) return;
+  const nFinal = all.filter(g => g.final && inFilter(g)).length;
+  vb.innerHTML = `<button type="button" data-v="plays" class="${viewOpts.plays?"on":""}" aria-pressed="${viewOpts.plays}">Plays only</button><button type="button" data-v="hideFinals" class="${viewOpts.hideFinals?"on":""}" aria-pressed="${viewOpts.hideFinals}">Hide finals${nFinal?` <span style="opacity:.7">${nFinal}</span>`:""}</button>`;
+  vb.querySelectorAll("[data-v]").forEach(b => b.addEventListener("click", () => { viewOpts[b.dataset.v] = !viewOpts[b.dataset.v]; store.set("view", viewOpts); render(); }));
 }
+async function gotoWeek(wk){
+  wk = Math.max(1, Math.min(MAX_WEEK, wk)); VIEW = wk === CUR ? null : wk; bestMode = false;
+  const bb = document.getElementById("best"); bb.setAttribute("aria-pressed", false); bb.classList.remove("primary"); document.getElementById("games").classList.remove("best");
+  render(); window.scrollTo({top: document.getElementById("weeknav").offsetTop - 60, behavior: "smooth"});
+  if(wk > CUR && !future[wk]){ try{ future[wk] = await loadBoard(wk); await loadWeather(future[wk]); }catch(_){ future[wk] = []; } if(viewWeek() === wk) render(); }
+}
+document.getElementById("wprev").addEventListener("click", () => gotoWeek(viewWeek()-1));
+document.getElementById("wnext").addEventListener("click", () => gotoWeek(viewWeek()+1));
+/* the slim bar appears once the real header scrolls off the top (phones and tablets; the desktop sidebar is already sticky) */
+if("IntersectionObserver" in window){ new IntersectionObserver(([en]) => document.getElementById("stickybar").classList.toggle("show", !en.isIntersecting && window.innerWidth < 900), {rootMargin:"-1px 0px 0px 0px"}).observe(document.querySelector("header")); }
+setInterval(() => document.querySelectorAll("[data-kick]").forEach(el => { const c = countdown(+el.dataset.kick); if(c) el.textContent = "in " + c; else el.remove(); }), 30000);
 function moveText(g,e){ if(!e.move) return ""; const toward = e.move<0 ? g.home : g.away;
   const withYou = e.pickHome != null && ((e.move<0) === e.pickHome);
   return ` <span class="move ${withYou?"with":"against"}">${withYou?"▲":"▼"} opened ${spreadText(g,g.open).replace(/^\w+ /,"")}</span>`; }
@@ -725,10 +909,10 @@ function bindCard(card, onSpread){
     const again = document.getElementById(id); if(again) again.focus();                                 // re-find after re-render
   });
 }
-function w1line(t){ const gs = week1.filter(x=>(x.home===t||x.away===t) && x.final).sort((a,b)=>(a.ts||0)-(b.ts||0)); const g = gs[gs.length-1]; if(!g) return "—";
+function w1line(t, H = week1){ const gs = H.filter(x=>(x.home===t||x.away===t) && x.final).sort((a,b)=>(a.ts||0)-(b.ts||0)); const g = gs[gs.length-1]; if(!g) return "—";
   const me = g.home===t?g.hs:g.as, them = g.home===t?g.as:g.hs, opp = g.home===t?g.away:g.home;
   return `${me>them?"W":me<them?"L":"T"} ${me}–${them} ${g.home===t?"vs":"@"} ${opp}`; }
-function statCell(k,t,d=1){ const vs = week1.filter(x=>x.final && (x.home===t||x.away===t)).map(x=>x.stats?.[k]?.[t]).filter(v=>v!=null); return vs.length ? (vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(d) : "—"; }
+function statCell(k,t,d=1,H=week1){ const vs = H.filter(x=>x.final && (x.home===t||x.away===t)).map(x=>x.stats?.[k]?.[t]).filter(v=>v!=null); return vs.length ? (vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(d) : "—"; }
 
 /* ---------- ESPN fetch ---------- */
 async function j(u){ const ac = new AbortController(); const t = setTimeout(()=>ac.abort(), 8000);
@@ -792,7 +976,7 @@ async function loadTeams(){                        // the FBS roster: who counts
 }
 function noteTeam(x){                               // from a scoreboard competitor: name, conference, AP rank
   const ab = norm(x.team.abbreviation); teamIds[x.team.id] = ab;
-  names[ab] = {...(names[ab]||{}), short: x.team.shortDisplayName || x.team.location || x.team.displayName, full: x.team.displayName, conf: x.team.conferenceId ?? names[ab]?.conf ?? null};
+  names[ab] = {...(names[ab]||{}), short: x.team.shortDisplayName || x.team.location || x.team.displayName, full: x.team.displayName, conf: x.team.conferenceId ?? names[ab]?.conf ?? null, logo: x.team.logo || names[ab]?.logo || null};
   const rk = +x.curatedRank?.current; if(rk && rk <= 25) rank[ab] = rk; else if(rk) delete rank[ab];
   return ab;
 }
@@ -845,8 +1029,10 @@ async function loadWeek1(){                       // every game before the curre
   return boxJobs;
 }
 async function loadWeek1All(){ const jobs = await loadWeek1(); await pool(jobs); }
-async function loadWeek2(){
-  const sb2 = await j(`${ESPN}/scoreboard?seasontype=2&week=${CUR}&dates=${YEAR}&${FBS_Q}`);
+const venueOf = c => c.venue ? {name: c.venue.fullName || "", city: c.venue.address?.city || "", state: c.venue.address?.state || "", indoor: !!c.venue.indoor} : null;
+async function loadWeek2(){ const games2 = await loadBoard(CUR, week2); if(games2.length) week2 = games2; store.set("names", names); }
+async function loadBoard(wk, prevList = []){          // one week's scoreboard → game objects (the live week, or a future one for early lines)
+  const sb2 = await j(`${ESPN}/scoreboard?seasontype=2&week=${wk}&dates=${YEAR}&${FBS_Q}`);
   const games2 = [], liveJobs = [];
   for(const ev of sb2.events||[]){
     const c = ev.competitions[0]; const h = c.competitors.find(x=>x.homeAway==="home"), a = c.competitors.find(x=>x.homeAway==="away");
@@ -854,8 +1040,8 @@ async function loadWeek2(){
     const d = new Date(ev.date); const home = noteTeam(h), away = noteTeam(a);
     const state = ev.status?.type?.state;                       // "pre" | "in" | "post"
     const sit = c.situation || {};
-    const prev = week2.find(x=>x.home===home && x.away===away);
-    const g = {week:CUR, home, away, neutral: !!c.neutralSite,
+    const prev = prevList.find(x=>x.home===home && x.away===away);
+    const g = {week:wk, home, away, neutral: !!c.neutralSite, venue: venueOf(c), wx: prev?.wx || null,
       day:d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
       time:kickTime(c, d), tv: tvOf(c),
       spread: parseSpread(c, home, away) ?? prev?.spread ?? null,   // keep the last line seen if ESPN drops it at kickoff
@@ -874,34 +1060,83 @@ async function loadWeek2(){
   }
   await pool(liveJobs);
   games2.sort((x,y)=>x.ts-y.ts);
-  if(games2.length) week2 = games2;
-  store.set("names", names);
+  return games2;
+}
+/* ---------- weather (Open-Meteo, free, no key): geocode each venue city once, then one forecast call for the whole slate ---------- */
+async function loadWeather(games){
+  const want = games.filter(g => !g.final && g.state !== "in" && g.venue && !g.venue.indoor && g.ts && g.ts - Date.now() < 15*864e5 && g.ts > Date.now() - 36e5);
+  if(!want.length) return;
+  const cityKey = v => `${v.city}, ${v.state}`.trim();
+  const need = [...new Set(want.map(g => cityKey(g.venue)))].filter(k => !geo[k] && k !== ",");
+  await pool(need.map(k => async () => {                       // geocode once per city, forever
+    const [city, st] = k.split(", "); const r = await j(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json&countryCode=US`);
+    const hit = (r.results||[]).find(x => !st || (x.admin1||"").toLowerCase().startsWith(st.toLowerCase().slice(0,4)) || x.admin1_code === st) || r.results?.[0];
+    geo[k] = hit ? {lat: hit.latitude, lon: hit.longitude} : false; }), 4);
+  store.set("geo", geo);
+  const located = want.filter(g => geo[cityKey(g.venue)]);
+  if(!located.length) return;
+  const pts = [...new Set(located.map(g => cityKey(g.venue)))];
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${pts.map(k=>geo[k].lat).join(",")}&longitude=${pts.map(k=>geo[k].lon).join(",")}&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=UTC&forecast_days=16`;
+  const r = await j(url); const arr = Array.isArray(r) ? r : [r];
+  arr.forEach((f, i) => { const k = pts[i]; const t = f.hourly?.time || []; if(!t.length) return;
+    for(const g of located.filter(x => cityKey(x.venue) === k)){
+      const target = new Date(g.ts + 30*60e3); target.setUTCMinutes(0,0,0);        // the hour half-way into the first quarter
+      const iso = target.toISOString().slice(0,13); let idx = t.findIndex(x => x.startsWith(iso)); if(idx < 0) continue;
+      const at = a => a?.[idx] ?? null, mx = (a, n) => Math.max(...(a||[]).slice(idx, idx+n).filter(v=>v!=null), 0);
+      g.wx = {temp: at(f.hourly.temperature_2m), wind: mx(f.hourly.wind_speed_10m, 3), gust: mx(f.hourly.wind_gusts_10m, 3), pop: mx(f.hourly.precipitation_probability, 3), precip: (f.hourly.precipitation||[]).slice(idx, idx+3).reduce((a,b)=>a+(b||0),0), indoor:false};
+    } });
 }
 function lineAlerts(){
   const box = document.getElementById("alerts"); if(!box) return;
   const crosses = (a,b) => [3,7].some(k => (Math.abs(a) < k) !== (Math.abs(b) < k) || (Math.abs(a) === k) !== (Math.abs(b) === k));
-  const items = [];
+  const items = [], pings = [];
   for(const g of week2){ const k = gkey(g); const was = lastSeen[k];
     if(was != null && g.spread != null && Math.abs(g.spread - was) >= 0.5){
       const e = evaluate(g, +document.getElementById("w").value/100), toward = g.spread < was ? g.home : g.away;
       const withYou = e.pickHome != null && ((g.spread < was) === e.pickHome);
       items.push(`<b>${g.away} @ ${g.home}</b>: ${spreadText(g,was)} → ${spreadText(g,g.spread)}${crosses(was,g.spread)?" <b>(crossed a key number)</b>":""} — money on ${toward}${e.pickHome!=null?`, ${withYou?"with":"against"} your pick`:""}`);
+      const mine = bets.some(b => b.key === k && !b.result) || (e.pCover ?? 0) >= PLAY_MIN;          // only games you care about get a notification
+      const stamp = `${k}|${g.spread}`; if(mine && !alerted[stamp]){ alerted[stamp] = 1; pings.push({title:`${g.away} @ ${g.home}: ${spreadText(g,g.spread)}`, body:`was ${spreadText(g,was)} · money on ${toward}${e.pickHome!=null?` · ${withYou?"with":"against"} your pick`:""}${crosses(was,g.spread)?" · crossed a key number":""}`}); }
     }
     if(g.spread != null) lastSeen[k] = g.spread; }
-  store.set("lastSeen", lastSeen);
-  box.innerHTML = items.length ? `<div class="alert">Lines moved since your last visit:<br>${items.join("<br>")}</div>` : "";
+  store.set("lastSeen", lastSeen); store.set("alerted", alerted);
+  if(items.length) box.innerHTML = `<div class="alert">Lines moved${box.dataset.seen?" (latest check)":" since your last visit"}:<br>${items.join("<br>")}</div>`;
+  box.dataset.seen = "1";
+  if(pings.length) notify(pings);
 }
+/* ---------- line-move notifications (no server: fires while the app is open or in a background tab) ---------- */
+async function notify(pings){
+  if(!notifyOn || !("Notification" in window) || Notification.permission !== "granted") return;
+  const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration().catch(()=>null) : null;
+  for(const p of pings.slice(0,5)){ const opts = {body:p.body, icon:"icon.png", badge:"icon.png", tag:p.title};
+    try{ if(reg?.showNotification) await reg.showNotification(p.title, opts); else new Notification(p.title, opts); }catch(_){} }
+}
+function renderNotify(){ const b = document.getElementById("notify"); if(!b) return;
+  const can = "Notification" in window, on = notifyOn && can && Notification.permission === "granted";
+  b.textContent = can ? `Alerts: ${on ? "On" : "Off"}` : "Alerts: n/a"; b.disabled = !can; b.classList.toggle("primary", on); b.setAttribute("aria-pressed", on);
+  if(can && Notification.permission === "denied") b.title = "Notifications are blocked for this site in your browser settings";
+  else if(can && !window.matchMedia?.("(display-mode: standalone)").matches && /iPhone|iPad/.test(navigator.userAgent)) b.title = "On iPhone, notifications need the app added to the Home Screen first"; }
+document.getElementById("notify").addEventListener("click", async () => {
+  if(!("Notification" in window)) return;
+  if(notifyOn){ notifyOn = false; store.local("notify", false); renderNotify(); return; }
+  let perm = Notification.permission; if(perm === "default") perm = await Notification.requestPermission();
+  notifyOn = perm === "granted"; store.local("notify", notifyOn); renderNotify();
+  if(notifyOn) notify([{title:"Saturday Edge alerts are on", body:"You'll hear about line moves on plays and logged bets while the app is open."}]);
+});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+renderNotify();
 function setStatus(extra = ""){
   const st = document.getElementById("status");
   const inPlay = week1.filter(g=>g.state==="in").length + week2.filter(g=>g.state==="in").length, finals = week2.filter(g=>g.final).length;
   const t = new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
-  st.innerHTML = `<b>${inPlay ? `● ${inPlay} live` : "Live from ESPN"}</b><br>${finals}/${week2.length} Wk ${CUR} finals · ${week1.filter(g=>g.final).length} games rated${extra?`<br>${extra}`:`<br>updated ${t}`}`;
+  st.innerHTML = `<span><b>${inPlay ? `● ${inPlay} live` : "Live from ESPN"}</b></span><span>${finals}/${week2.length} finals · ${week1.filter(g=>g.final).length} rated</span><span>${extra || `updated ${t}`}</span>`;
 }
 async function loadLive(){
   document.getElementById("status").innerHTML = "Fetching from ESPN…";
   await loadTeams(); await detectWeek();
   const boxJobs = await loadWeek1(); await loadWeek2(); live = true;
   ratings = buildRatings(); backtest(); setStatus(boxJobs.length ? `fetching ${boxJobs.length} box scores…` : ""); render(); lineAlerts();   // first paint from margins alone
+  loadWeather(week2).then(() => render()).catch(()=>{});   // forecast arrives on its own; the slate never waits for it
   if(boxJobs.length){                              // then fill in yards-per-play and turnovers; ratings sharpen when it's done
     await pool(boxJobs, 8, (d,n) => { if(d % 10 === 0 || d === n) setStatus(`box scores ${d}/${n}…`); });
     store.set("box", boxCache);
@@ -916,16 +1151,17 @@ function schedulePoll(){
   const now = Date.now();
   const isActive = g => g.state==="in" || (g.state==="pre" && g.ts - now < 15*60*1000 && g.ts - now > -4*3600*1000);
   const w1Active = week1.some(g => !g.final && isActive(g)), w2Active = week2.some(isActive);
-  if(!w1Active && !w2Active) return;
+  const watching = notifyOn && week2.some(g => g.state==="pre" && g.ts - now < 3*864e5 && g.ts > now);   // alerts on: keep an eye on the lines for the next few days
+  if(!w1Active && !w2Active && !watching) return;
   pollTimer = setTimeout(async () => {
-    if(document.visibilityState==="visible"){ try{
+    if(document.visibilityState==="visible" || watching){ try{
       if(w1Active){ await loadWeek1All(); backtest(); ratings = buildRatings(); }
-      if(w2Active) await loadWeek2();
-      setStatus(); render(); }catch(_){} }
+      if(w2Active || watching) await loadWeek2();
+      setStatus(); render(); lineAlerts(); }catch(_){} }
     schedulePoll();
-  }, 60000 * backoff);
+  }, (w1Active || w2Active ? 60000 : 600000) * backoff);
 }
-document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible" && live){ Promise.all([week1.some(g=>!g.final)?loadWeek1All():null, loadWeek2()]).then(()=>{backtest();ratings=buildRatings();setStatus();render();}).catch(()=>{}); schedulePoll(); } });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible" && live){ Promise.all([week1.some(g=>!g.final)?loadWeek1All():null, loadWeek2()]).then(()=>{backtest();ratings=buildRatings();setStatus();render();lineAlerts();}).catch(()=>{}); schedulePoll(); } });
 /* ---------- theme ---------- */
 const THEMES = ["auto","light","dark"];
 function applyTheme(){ const t = store.get("theme","auto"), root = document.documentElement;
@@ -942,7 +1178,7 @@ async function init(){
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
   cloud.init().catch(err => { cloud.msg = "Sync unavailable: " + err.message; renderAuth(); });
   try{ await loadLive(); }
-  catch(err){ document.getElementById("status").innerHTML = `<b>Couldn't reach ESPN</b><br>${week2.length ? "showing the last slate loaded" : "no games loaded"}<br>tap Refresh to retry`; }
+  catch(err){ document.getElementById("status").innerHTML = `<span><b>Couldn't reach ESPN</b></span><span>${week2.length ? "showing the last slate loaded" : "no games loaded"}</span><span>tap Refresh to retry</span>`; }
   backtest(); ratings = buildRatings(); render(); schedulePoll();
 }
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
@@ -954,8 +1190,8 @@ document.getElementById("share").addEventListener("click", sharePicks);
 document.getElementById("best").addEventListener("click", ev => { bestMode = !bestMode; ev.target.setAttribute("aria-pressed", bestMode); ev.target.classList.toggle("primary", bestMode); document.getElementById("games").classList.toggle("best", bestMode); render(); });
 document.getElementById("recap").addEventListener("click", () => sharePicks(true));
 async function sharePicks(recap = false){
-  const w = +document.getElementById("w").value/100;
-  const rows = week2.filter(inFilter).map(g => ({g, e:evaluate(g,w)})).filter(x => x.e.market!=null).sort((a,b) => Math.abs(b.e.edge) - Math.abs(a.e.edge));
+  const w = +document.getElementById("w").value/100, VW = viewWeek();
+  const rows = slateFor(viewWeek()).filter(inFilter).map(g => ({g, e:evaluate(g,w)})).filter(x => x.e.market!=null && x.e.pickHome!=null).sort((a,b) => Math.abs(b.e.edge) - Math.abs(a.e.edge));
   const line = ({g,e}) => { const side = e.pickHome ? g.home : g.away, num = e.pickHome ? e.spread : -e.spread;
     return { pick:`${side} ${num>0?"+":""}${num.toFixed(1)}`, game:`${g.away} @ ${g.home}`, edge:Math.abs(e.edge).toFixed(1),
       prob: pct(e.pickHome ? e.pHome : 1-e.pHome), strong: e.pCover >= PLAY_MIN, cover: pct(e.pCover),
@@ -966,16 +1202,16 @@ async function sharePicks(recap = false){
   else { L = [...L.filter(x => x.strong), ...L.filter(x => !x.strong)]; }        // plays first — a 60-game slate won't fit one image
   const total = L.length; L = L.slice(0, SHARE_MAX);
   const chipLabel = CHIPS.find(c => c[0]===filterMode)?.[1] || "All FBS";
-  gradeBets(); const wk = bets.filter(b => b.week === CUR && b.result); const wkPL = wk.reduce((a,b)=>a+b.profit,0);
+  gradeBets(); const wk = bets.filter(b => b.week === VW && b.result); const wkPL = wk.reduce((a,b)=>a+b.profit,0);
   const recW = L.filter(x=>x.res==="✓").length, recL = L.filter(x=>x.res==="✗").length;
-  const text = `Saturday Edge — Week ${CUR} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
+  const text = `Saturday Edge — Week ${VW} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
   try{ await document.fonts.ready; }catch(_){}
   const W = 1080, rowH = 62, top = 230, H = top + L.length*rowH + 90;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
   c.fillStyle = "#F5F4EE"; c.fillRect(0,0,W,H);
   c.fillStyle = "#17263A"; c.fillRect(0,0,W,150);
-  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${CUR} RECAP` : "SATURDAY EDGE", 48, 92);
-  c.font = "500 30px Barlow, sans-serif"; c.fillText(recap ? `Model picks ${recW}–${recL} ATS${wk.length?` · logged bets ${wkPL>=0?"+":"−"}$${Math.abs(wkPL).toFixed(0)} on ${wk.length} bet${wk.length>1?"s":""}`:""}` : `Week ${CUR} · ${chipLabel} · ${total > L.length ? `top ${L.length} of ${total} · ` : ""}${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`, 48, 132);
+  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${VW} RECAP` : "SATURDAY EDGE", 48, 92);
+  c.font = "500 30px Barlow, sans-serif"; c.fillText(recap ? `Model picks ${recW}–${recL} ATS${wk.length?` · logged bets ${wkPL>=0?"+":"−"}$${Math.abs(wkPL).toFixed(0)} on ${wk.length} bet${wk.length>1?"s":""}`:""}` : `Week ${VW} · ${chipLabel} · ${total > L.length ? `top ${L.length} of ${total} · ` : ""}${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`, 48, 132);
   c.fillStyle = "#5B6778"; c.font = "600 24px Barlow, sans-serif"; c.fillText("PICK", 48, top-24); c.fillText("GAME", 400, top-24); c.fillText("WIN %", 640, top-24); c.fillText("COVER", 780, top-24); c.fillText("TOTAL", 900, top-24);
   L.forEach((x,i) => { const y = top + i*rowH;
     if(i%2) { c.fillStyle = "#ECEBE3"; c.fillRect(24, y-40, W-48, rowH); }
@@ -985,10 +1221,10 @@ async function sharePicks(recap = false){
     if(x.res){ c.fillStyle = x.res==="✓" ? "#2E7D4F" : x.res==="✗" ? "#D9532B" : "#5B6778"; c.font = "700 30px Barlow, sans-serif"; c.fillText(x.res, 1000, y); } });
   c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = cover chance ≥ ${Math.round(PLAY_MIN*100)}%. Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
-  const file = new File([blob], `saturday-edge-week${CUR}${recap?"-recap":""}.png`, {type:"image/png"});
+  const file = new File([blob], `saturday-edge-week${VW}${recap?"-recap":""}.png`, {type:"image/png"});
   try{
-    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:`Week ${CUR} picks`, text}); return; }
-    if(navigator.share){ await navigator.share({title:`Week ${CUR} picks`, text}); return; }
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:`Week ${VW} picks`, text}); return; }
+    if(navigator.share){ await navigator.share({title:`Week ${VW} picks`, text}); return; }
   }catch(err){ if(err?.name==="AbortError") return; }
   try{ await navigator.clipboard.writeText(text); }catch(_){}
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
