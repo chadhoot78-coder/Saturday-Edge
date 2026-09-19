@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Saturday Edge — College Football</title>
+<title>Saturday Edge</title>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json" id="manifestLink">
 <meta name="apple-mobile-web-app-title" content="Saturday Edge">
 <meta name="theme-color" content="#17263A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,6 +55,8 @@
   .seg{display:flex;gap:6px}
   .seg button{flex:1;padding:10px 4px;font-size:13px;border-color:var(--line);background:var(--card);color:var(--ink-2)}
   .seg button.on{background:var(--turf);border-color:var(--turf);color:#fff}
+  .seg.lg{margin-bottom:8px} .seg.lg button{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.02em} .seg.lg button.on{background:var(--ink);border-color:var(--ink);color:var(--chalk)}
+  .lgtag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:1px 5px;border:1px solid var(--line);border-radius:4px;color:var(--ink-2);margin-right:4px;vertical-align:middle}
   button.primary{color:var(--chalk)}
   .seg button:disabled{opacity:.45;cursor:default}
   #learn tr.best td{font-weight:700;color:var(--turf-deep)}
@@ -165,7 +167,7 @@
     .controls .stake{justify-content:space-between} .controls .stake input{width:110px}
     .controls .chips{flex-wrap:wrap;overflow:visible}
     .wrap > #alerts{grid-area:alerts} .wrap > .record{grid-area:record;margin-top:10px} .wrap > #games{grid-area:games}
-    .wrap > #ledger{grid-area:ledger} .wrap > #movers{grid-area:movers} .wrap > #learn{grid-area:learn} .wrap > section.method:last-of-type{grid-area:method} .wrap > .disclaimer{grid-area:disc}
+    .wrap > #ledger{grid-area:ledger} .wrap > #movers{grid-area:movers} .wrap > #learn{grid-area:learn} .wrap > section.method[data-lg]{grid-area:method} .wrap > .disclaimer{grid-area:disc}
     #games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
     #games > .day{grid-column:1/-1;margin:16px 0 0} #games > .record,#games > .empty,#games > .alert,#games > .finals{grid-column:1/-1}
     #games > .game{margin-bottom:0} .game:hover{border-color:var(--ink-2)} .game.flag:hover{border-color:var(--flag)}
@@ -179,14 +181,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div id="stickybar" aria-hidden="true"><div>Saturday Edge <b id="sbWeek"></b></div><span id="sbInfo"></span></div>
+<div id="stickybar" aria-hidden="true"><div><span class="sbName">Saturday Edge</span> <b id="sbWeek"></b></div><span id="sbInfo"></span></div>
 <div class="wrap">
   <header>
-    <h1>Saturday Edge<small><span id="wk">FBS</span> · win probability vs. the spread</small></h1>
-    <div class="status" id="status" aria-live="polite">Loading FBS results from ESPN…</div>
+    <h1><span class="appName">Saturday Edge</span><small><span id="wk">FBS</span> · win probability vs. the spread</small></h1>
+    <div class="status" id="status" aria-live="polite">Loading results from ESPN…</div>
   </header>
 
   <section class="controls">
+    <div class="seg lg" role="group" aria-label="League" id="lgswitch"><button type="button" data-lg="cfb">College</button><button type="button" data-lg="nfl">NFL</button></div>
     <div class="seg" role="group" aria-label="Weight on season stats vs the market line">
       <button type="button" data-w="100">Stats only</button>
       <button type="button" data-w="65">Stats-heavy</button>
@@ -221,11 +224,11 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v3.1</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
-  <section class="method">
+  <section class="method" data-lg="cfb">
     <h2>How the number is built</h2>
     <p><b>Team rating.</b> Every FBS game played this season counts: point margin (home field removed, capped at ±35 so a 70-point rout counts like a 35-point one), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
     <p><b>FCS opponents.</b> Teams outside the FBS are anchored to a −22 rating (roughly where the market puts an average FCS visitor) and only drift from it with heavy shrinkage. Games against them still feed the FBS team's rating, but they're left out of the backtest — and, since v3, out of the picks too. A −22 prior against a 55-point line produced "85% to cover" underdogs that lost by 80, so a game with an FCS team shows the market number only: no ATS side, no total play, no stake. The bar and win % on those cards are the market's, not the model's.</p>
@@ -242,27 +245,78 @@
     <p><b>Probability.</b> Expected margin ÷ 16 (the historical std. dev. of FBS margins, wider than the NFL's 13.5) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with a little extra weight on 3 and 7 — key numbers matter in college, but less than in the pros. College football has no ties, so a 0 margin is impossible. A pick is a play only when the cover chance is ≥54.5% (break-even is 52.4%); otherwise it's a pass. Once a game is final the pick grades W/L and the record at the top updates.</p>
     <p><b>Coverage.</b> Regular season, FBS games only (Weeks 1–16 on ESPN's calendar, including conference championships). Bowls and the playoff aren't loaded.</p>
   </section>
+  <section class="method" data-lg="nfl">
+    <h2>How the number is built</h2>
+    <p><b>Team rating.</b> Every game played this season counts: point margin (home-field removed), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
+    <p><b>Rest &amp; injuries.</b> The model line gets ±0.3 points per day of rest advantage (short weeks, byes), and a penalty for players listed Out or Doubtful on ESPN's injury report — about 4 points for a quarterback, half a point for other starters, capped at 6. These only touch the stats side; the market already prices them. International games at neutral sites get no home-field points.</p>
+    <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the stadium for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes and retractables ESPN marks indoor are skipped.</p>
+    <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off. Until then the log shows how far the line has moved from your number; once the game is on it shows whether the bet is covering and by how much, live.</p>
+    <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the league average of 22.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 13.5-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
+    <p><b>Past and future weeks.</b> The ◀ ▶ arrows step through the season. A past week is re-scored with only the ratings that existed before it kicked off (the same walk-forward rule as the backtest), so what you see is what the model would have said that Sunday, not hindsight. Future weeks show whatever lines the books have posted.</p>
+    <p><b>Alerts.</b> Turn on Alerts and the app sends a notification when a line moves half a point or more on a play or a logged bet. It checks while the app is open or in a background tab; this is a one-file app with no server, so it can't wake a closed phone.</p>
+    <p><b>Learning.</b> After each completed week the app replays the season: for every past week it rebuilds ratings from only the weeks before, predicts that week, and scores each stats/market weight and shrink speed against the real margins. The <b>Auto</b> button uses whatever backtested best. It needs at least one week of games after Week 1 to have anything to learn from.</p>
+    <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
+    <p><b>Model line.</b> Home rating − away rating + 1.5 pts home field (0 at a neutral site).</p>
+    <p><b>Blend.</b> The slider mixes the model line with the market line. Default is 35% stats / 65% market, because the line already prices injuries, weather, and matchups. Nudge it toward stats as the season goes on.</p>
+    <p><b>Probability.</b> Expected margin ÷ 13.5 (the historical std. dev. of NFL margins) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with extra weight on the key numbers 3 and 7, so crossing 3 is worth more than crossing 5. A pick is a play only when the cover chance is ≥54.5% (break-even is 52.4%); otherwise it's a pass. Once a game is final the pick grades W/L and the record at the top updates.</p>
+    <p><b>Coverage.</b> Regular season, Weeks 1–18. The playoffs aren't loaded.</p>
+  </section>
 </div>
 
 <script>
 /* ---------- constants ---------- */
+/* ---------- leagues: one app, two slates. Everything league-specific lives here; the rest of the file reads LG. ----------
+   The league comes from ?league=cfb|nfl in the URL (so a home-screen icon can pin one), else the last one used, else college. */
+const LEAGUES = {
+  cfb: { id:"cfb", name:"Saturday Edge", label:"College", tag:"FBS", prefix:"se:", appId:"se", file:"saturday-edge",
+    espn:"https://site.api.espn.com/apis/site/v2/sports/football/college-football", core:"https://sports.core.api.espn.com/v2/sports/football/leagues/college-football",
+    q:"groups=80&limit=300",                          // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
+    HFA:2.5, SD:16, MARGIN_CAP:35, FCS_R:-22, MAX_WEEK:16, RANGE:90, AUTO_MIN:150, K_MIN:250, PRIOR_N:150, LG_TEAM_PTS:28.5,
+    KEY:{0:0, 1:.9, 2:.9, 3:1.35, 4:1.05, 5:.9, 6:1.05, 7:1.25, 8:.95, 10:1.1, 14:1.1, 17:1.05, 21:1.05},   // no ties in college; 3 and 7 matter less than in the NFL
+    week1:[7,30] },                                   // ESPN folds Week 0 into Week 1; weeks roll over the Sunday after the Week 0 games (Aug 30)
+  nfl: { id:"nfl", name:"Gridiron Edge", label:"NFL", tag:"NFL", prefix:"ge:", appId:"ge", file:"gridiron-edge",
+    espn:"https://site.api.espn.com/apis/site/v2/sports/football/nfl", core:"https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+    q:"limit=100",
+    HFA:1.5, SD:13.5, MARGIN_CAP:99, FCS_R:0, MAX_WEEK:18, RANGE:70, AUTO_MIN:64, K_MIN:100, PRIOR_N:100, LG_TEAM_PTS:22.5,
+    KEY:{0:.12, 1:.85, 2:.85, 3:1.7, 4:1.15, 5:.85, 6:1.15, 7:1.45, 8:.9, 9:.9, 10:1.2, 11:.9, 13:.9, 14:1.15, 17:1.1, 21:1.1},   // ≈9.5% of NFL games land on 3, ≈7% on 7, <0.5% tie
+    week1:[8,9] }                                     // Week 1 kicks off Thu Sep 10; NFL weeks roll over on Wednesday
+};
+const LG = (() => { const p = new URLSearchParams(location.search).get("league"); let id = LEAGUES[p] ? p : null;
+  if(!id){ try{ id = JSON.parse(localStorage.getItem("edge:league")); }catch(_){} } if(!LEAGUES[id]) id = "cfb";
+  try{ localStorage.setItem("edge:league", JSON.stringify(id)); }catch(_){} return LEAGUES[id]; })();
+const NFL = LG.id === "nfl", OTHER = LEAGUES[NFL ? "cfb" : "nfl"];
+/* This runs before anything reads storage. The old stand-alone NFL site sends its saved data along when it redirects here (#import=…), because localStorage doesn't cross domains. */
+(function importFromOldSite(){
+  const m = location.hash.match(/^#import=(.+)$/); if(!m) return;
+  try{ const pack = JSON.parse(decodeURIComponent(escape(atob(m[1])))); const prefix = pack.prefix; if(!prefix || !Object.values(LEAGUES).some(l => l.prefix === prefix)) return;
+    const get = k => { try{ return JSON.parse(localStorage.getItem(prefix + k)); }catch(_){ return null; } }, put = (k, v) => { try{ localStorage.setItem(prefix + k, JSON.stringify(v)); }catch(_){} };
+    for(const [k, v] of Object.entries(pack.data || {})){ const cur = get(k);
+      if(k === "bets"){ const ids = new Set((cur || []).map(b => b.id)); put(k, [...(cur || []), ...(v || []).filter(b => !ids.has(b.id))].sort((a,b) => a.ts - b.ts)); }
+      else if(k === "betsDeleted"){ put(k, [...new Set([...(cur || []), ...(v || [])])]); }
+      else if(v && typeof v === "object" && !Array.isArray(v)){ put(k, {...v, ...(cur || {})}); }
+      else if(cur == null){ put(k, v); } }
+  }catch(_){}
+  history.replaceState(null, "", location.pathname + location.search);
+})();
+const {HFA, SD, MARGIN_CAP, FCS_R, MAX_WEEK, KEY, AUTO_MIN, K_MIN, PRIOR_N, LG_TEAM_PTS} = LG;
+const LEAN_MIN = 1.5, SHARE_MAX = 18;
 let YEAR = 2026;
-/* ESPN folds Week 0 into Week 1, so Week 1 is the Sat Sep 5 slate, Week 3 = Sep 19, Week 4 = Sep 26. Until ESPN answers,
-   estimate the week from today's date instead of guessing a number. */
-const WEEK1_SUNDAY = new Date(YEAR, 7, 30);        // the Sunday after the Week 0 games; weeks roll over Sunday morning
-let CUR = Math.max(1, Math.min(16, 1 + Math.floor((Date.now() - WEEK1_SUNDAY) / 6048e5)));
-const HFA = 2.5, SD = 16, LEAN_MIN = 1.5, MARGIN_CAP = 35, FCS_R = -22, MAX_WEEK = 16, SHARE_MAX = 18;
+const WEEK1_ROLL = new Date(YEAR, LG.week1[0], LG.week1[1]);   // until ESPN answers, estimate the week from today's date instead of guessing a number
+let CUR = Math.max(1, Math.min(MAX_WEEK, 1 + Math.floor((Date.now() - WEEK1_ROLL) / 6048e5)));
 const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
 const KELLY_CAP = 0.05;                              // never suggest more than 5% of the bankroll on one bet, whatever the math says
 let VIEW = null;                                     // the week on screen; null = the current week (CUR)
-const store = { get(k,d){ try{ const v = localStorage.getItem("se:"+k); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
+const GLOBAL_KEYS = ["theme","notify","view","geo"];   // settings shared by both leagues; everything else is per league
+const skey = (k, prefix = LG.prefix) => (GLOBAL_KEYS.includes(k) ? "edge:" : prefix) + k;
+const store = { get(k,d){ try{ const v = localStorage.getItem(skey(k)); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
                 set(k,v){ this.local(k,v); if(SYNC_KEYS.includes(k)) cloud.put(k,v); },
-                local(k,v){ try{ localStorage.setItem("se:"+k, JSON.stringify(v)); }catch(_){} } };
+                local(k,v){ try{ localStorage.setItem(skey(k), JSON.stringify(v)); }catch(_){} },
+                other(k,d){ try{ const v = localStorage.getItem(skey(k, OTHER.prefix)); return v==null ? d : JSON.parse(v); }catch(_){ return d; } } };
 /* ---------- accounts & cross-device sync (Supabase) ----------
    Paste your project's URL and anon key from Supabase → Project Settings → API Keys. The anon key is meant to ship in the page: row-level
    security on the user_state table (see supabase-setup.sql) means a signed-in user can only read and write their own rows. Leave both
    blank and the app runs device-only, exactly as before. */
-const SUPA_URL = "https://vhnpiprscrmwfvktixvb.supabase.co", SUPA_KEY = "sb_publishable_te-X3YBsJ7Bc1LfQJyoUuw_yobiOU-s", APP_ID = "se";
+const SUPA_URL = "https://vhnpiprscrmwfvktixvb.supabase.co", SUPA_KEY = "sb_publishable_te-X3YBsJ7Bc1LfQJyoUuw_yobiOU-s", APP_ID = LG.appId;
 const SYNC_KEYS = ["bets","betsDeleted","picks","graded","lines","openers","overrides","bank"];   // what follows the account; caches stay on the device
 const cloud = { db:null, user:null, timers:{}, msg:"",
   ready(){ return !!(SUPA_URL && SUPA_KEY && window.supabase); },
@@ -318,7 +372,7 @@ const ratingsFor = wk => { if(wk == null || wk >= CUR) return ratings;
   const key = `${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
   return ratingCache[key] ||= buildRatings(week1.filter(x => x.final && x.week < wk)); };
 const histFor = wk => (wk == null || wk >= CUR) ? week1 : week1.filter(x => x.week < wk);   // what the model knew before that week
-const isFCSGame = g => !isFBS(g.home) || !isFBS(g.away);
+const isFCSGame = g => !NFL && (!isFBS(g.home) || !isFBS(g.away));
 const saveBets = () => store.set("bets", bets);
 const gkey = g => `${YEAR}-w${g.week ?? CUR}-${g.away}@${g.home}`;
 function registerOpen(g){ const k = gkey(g); if(openers[k]==null && g.spread!=null){ openers[k] = g.spread; store.set("openers", openers); } g.open = openers[k] ?? null; }
@@ -334,38 +388,46 @@ function rememberLines(g){ const k = gkey(g), L = lines[k] || {}; let changed = 
   if(changed){ lines[k] = L; store.set("lines", lines); }
   for(const f of ["spread","ou","mlH","mlA"]) if(g[f] == null && L[f] != null) g[f] = L[f];
   if(g.spread == null && openers[k] != null) g.spread = openers[k]; }   // older visits only saved the opener — better than no line
-const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
-const CORE = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
-const FBS_Q = "groups=80&limit=300";                              // groups=80 = all of FBS; without it ESPN only returns the Top 25 slate
+const ESPN = LG.espn, CORE = LG.core, FBS_Q = LG.q;
 const FBS_CONF = new Set(["1","4","5","8","9","12","15","17","18","37","151"]);   // ESPN group ids for the FBS conferences + FBS independents
-const isFBS = t => { const c = names[t]?.conf; if(c != null && c !== "") return FBS_CONF.has(String(c));   // the scoreboard tags every team with its conference
+const isFBS = t => { if(NFL) return true;                          // every NFL team is a real team; no FCS-style prior
+  const c = names[t]?.conf; if(c != null && c !== "") return FBS_CONF.has(String(c));   // the scoreboard tags every team with its conference
   return !fbs.size || fbs.has(t); };                              // no conference known: fall back to the roster list, or trust everyone
-const nameOf = t => `${rank[t] && rank[t] <= 25 ? `<span class="rank">#${rank[t]}</span> ` : ""}${names[t]?.short || ""}`;
-const confOf = t => names[t]?.conf ?? null;
+const NAMES = {ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Panthers",CHI:"Bears",CIN:"Bengals",CLE:"Browns",DAL:"Cowboys",DEN:"Broncos",DET:"Lions",GB:"Packers",HOU:"Texans",IND:"Colts",JAX:"Jaguars",KC:"Chiefs",LAC:"Chargers",LAR:"Rams",LV:"Raiders",MIA:"Dolphins",MIN:"Vikings",NE:"Patriots",NO:"Saints",NYG:"Giants",NYJ:"Jets",PHI:"Eagles",PIT:"Steelers",SEA:"Seahawks",SF:"49ers",TB:"Buccaneers",TEN:"Titans",WAS:"Commanders"};
+const DIV = {BUF:"AFC East",MIA:"AFC East",NE:"AFC East",NYJ:"AFC East",BAL:"AFC North",CIN:"AFC North",CLE:"AFC North",PIT:"AFC North",HOU:"AFC South",IND:"AFC South",JAX:"AFC South",TEN:"AFC South",DEN:"AFC West",KC:"AFC West",LV:"AFC West",LAC:"AFC West",
+  DAL:"NFC East",NYG:"NFC East",PHI:"NFC East",WAS:"NFC East",CHI:"NFC North",DET:"NFC North",GB:"NFC North",MIN:"NFC North",ATL:"NFC South",CAR:"NFC South",NO:"NFC South",TB:"NFC South",ARI:"NFC West",LAR:"NFC West",SF:"NFC West",SEA:"NFC West"};
+const nameOf = t => NFL ? (names[t]?.short || NAMES[t] || "") : `${rank[t] && rank[t] <= 25 ? `<span class="rank">#${rank[t]}</span> ` : ""}${names[t]?.short || ""}`;
+const confOf = t => NFL ? ((DIV[t] || "").slice(0,3) || null) : (names[t]?.conf ?? null);
+const isDivGame = g => !!DIV[g.home] && DIV[g.home] === DIV[g.away];
+const slotOf = g => { if(!g.ts) return "other"; const d = new Date(g.ts), day = d.getUTCDay(), h = d.getUTCHours() + d.getUTCMinutes()/60;   // kickoff windows in UTC: early = 1pm ET, late = 4pm ET, everything else primetime
+  if(day !== 0 || h >= 23) return "prime"; return h < 19 ? "early" : "late"; };
 const CONF = {1:"ACC", 4:"Big 12", 5:"Big Ten", 8:"SEC", 9:"Pac-12", 12:"C-USA", 15:"MAC", 17:"Mountain West", 18:"Independent", 37:"Sun Belt", 151:"American"};
 const POWER = ["1","4","5","8"];
-const CHIPS = [["all","All FBS"],["top25","Top 25"],["8","SEC"],["5","Big Ten"],["1","ACC"],["4","Big 12"],["g5","Other FBS"]];
+const CHIPS = NFL ? [["all","All games"],["AFC","AFC"],["NFC","NFC"],["div","Divisional"],["early","Sun early"],["late","Sun late"],["prime","Primetime"]]
+                  : [["all","All FBS"],["top25","Top 25"],["8","SEC"],["5","Big Ten"],["1","ACC"],["4","Big 12"],["g5","Other FBS"]];
 const inFilter = g => { if(filterMode==="all") return true;
+  if(NFL){ if(filterMode==="AFC" || filterMode==="NFC") return confOf(g.home)===filterMode || confOf(g.away)===filterMode;
+    if(filterMode==="div") return isDivGame(g); return slotOf(g) === filterMode; }
   if(filterMode==="top25") return (rank[g.home] && rank[g.home] <= 25) || (rank[g.away] && rank[g.away] <= 25);
   if(filterMode==="g5") return !POWER.includes(String(confOf(g.home))) && !POWER.includes(String(confOf(g.away)));
   return String(confOf(g.home))===filterMode || String(confOf(g.away))===filterMode; };
-const norm = a => a;
+const norm = a => NFL ? ({JAC:"JAX",LA:"LAR",WSH:"WAS"}[a] || a) : a;
+const bigGame = g => NFL ? isDivGame(g) : POWER.includes(String(confOf(g.home))) && POWER.includes(String(confOf(g.away)));   // the "marquee" split in the season view
 
-/* ---------- no built-in slate: FBS plays 60+ games a week, so everything comes from ESPN at load time ---------- */
+/* ---------- no built-in slate: everything comes from ESPN at load time ---------- */
 const FALLBACK_W1 = [], FALLBACK_W2 = [];
 
 /* ---------- state ---------- */
 let week1 = FALLBACK_W1, week2 = FALLBACK_W2, ratings = {}, overrides = store.get("overrides", {}), live = false;   // typed-in spreads survive a reload
 
 /* ---------- math ---------- */
-/* Margins are discrete and pile up a little on 3 and 7. Build an integer distribution from a normal curve, then
-   scale the key numbers to roughly their real frequencies (college lands on 3 and 7 less often than the NFL does). */
-const KEY = {0:0, 1:.9, 2:.9, 3:1.35, 4:1.05, 5:.9, 6:1.05, 7:1.25, 8:.95, 10:1.1, 14:1.1, 17:1.05, 21:1.05};   // no ties in college; 3 and 7 matter less than in the NFL
+/* Margins are discrete and pile up on 3 and 7 (more so in the NFL). Build an integer distribution from a normal curve, then
+   scale the key numbers to roughly their real frequencies — the per-league KEY table above. */
 const distCache = {};
 function margDist(mu){                              // -> Map(int -> p) for home margin with expected value mu
   const k = mu.toFixed(1); if(distCache[k]) return distCache[k];
   const pmf = new Map(); let tot = 0;
-  for(let m = -90; m <= 90; m++){ const z = (m - mu)/SD; let p = Math.exp(-z*z/2) * (KEY[Math.abs(m)] ?? 1); pmf.set(m, p); tot += p; }
+  for(let m = -LG.RANGE; m <= LG.RANGE; m++){ const z = (m - mu)/SD; let p = Math.exp(-z*z/2) * (KEY[Math.abs(m)] ?? 1); pmf.set(m, p); tot += p; }
   for(const [m,p] of pmf) pmf.set(m, p/tot);
   return distCache[k] = pmf;
 }
@@ -398,7 +460,7 @@ function buildRatings(games = week1, K = K_SHRINK){
     }
     const fb = Object.keys(next).filter(isFBS);
     const mean = fb.reduce((a,t)=>a+next[t],0) / Math.max(1, fb.length);
-    for(const t of fb) next[t] -= mean;              // FBS average = 0; FCS teams stay anchored below it
+    for(const t of fb) next[t] -= mean;              // league average = 0; FCS teams (college) stay anchored below it
     r = next;
   }
   return r;
@@ -406,7 +468,7 @@ function buildRatings(games = week1, K = K_SHRINK){
 /* ---------- learning: walk-forward backtest ----------
    For every completed week after Week 1, rebuild ratings from ONLY the weeks before it, predict that week's
    games, and score each setting against what actually happened. No game ever grades itself. */
-const AUTO_MIN = 150, K_MIN = 250, PRIOR_N = 150;  // ~60 FBS games a week: Auto unlocks after ~3 weeks of backtest, shrink retunes after ~4; the prior counts as 150 games
+/* AUTO_MIN / K_MIN / PRIOR_N come from the league config: ~60 FBS games a week vs 16 NFL games, so the thresholds differ */
 const WEIGHTS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1], KS = [1, 2.33, 4, 8];
 let learn = {n:0, rows:[], best:null, auto:null};
 function backtest(){
@@ -454,9 +516,12 @@ function renderMovers(){
     <p>${prev ? "Biggest changes in the model's rating since last week, and the game that caused them." : "First week of data, so these are the rankings themselves rather than changes. Movers appear from Week 3."}</p>
     <div class="tablewrap"><table><tr><th>Up</th><th>Δ</th><th>Rating</th><th>Why</th></tr>${up.map(li).join("")}</table></div>
     <div class="tablewrap"><table><tr><th>Down</th><th>Δ</th><th>Rating</th><th>Why</th></tr>${down.map(li).join("")}</table></div>
-    <h2 style="margin-top:16px">Model top 25</h2>
+    ${NFL ? `<h2 style="margin-top:16px">Model power rankings</h2>
+    <p>All 32 teams by the model's rating — points better or worse than an average team on a neutral field.</p>
+    <div class="tablewrap"><table><tr><th>#</th><th>Team</th><th>Rating</th><th>Games</th></tr>${teams.slice().sort((a,b)=>ratings[b]-ratings[a]).map((t,i)=>`<tr><td>${i+1}</td><td><b>${t}</b> ${nameOf(t)}</td><td>${fmt(ratings[t])}</td><td>${gamesPlayed(t)}</td></tr>`).join("")}</table></div>`
+    : `<h2 style="margin-top:16px">Model top 25</h2>
     <p>The model's own ranking by rating, next to the AP rank ESPN shows. Big gaps between the two are where the model disagrees with the polls.</p>
-    <div class="tablewrap"><table><tr><th>#</th><th>Team</th><th>Rating</th><th>AP</th><th>Games</th></tr>${teams.slice().sort((a,b)=>ratings[b]-ratings[a]).slice(0,25).map((t,i)=>`<tr><td>${i+1}</td><td><b>${t}</b> ${names[t]?.short||""}</td><td>${fmt(ratings[t])}</td><td>${rank[t]&&rank[t]<=25?"#"+rank[t]:"—"}</td><td>${gamesPlayed(t)}</td></tr>`).join("")}</table></div>`;
+    <div class="tablewrap"><table><tr><th>#</th><th>Team</th><th>Rating</th><th>AP</th><th>Games</th></tr>${teams.slice().sort((a,b)=>ratings[b]-ratings[a]).slice(0,25).map((t,i)=>`<tr><td>${i+1}</td><td><b>${t}</b> ${names[t]?.short||""}</td><td>${fmt(ratings[t])}</td><td>${rank[t]&&rank[t]<=25?"#"+rank[t]:"—"}</td><td>${gamesPlayed(t)}</td></tr>`).join("")}</table></div>`}`;
 }
 function renderLearn(){
   const box = document.getElementById("learn"); if(!box) return;
@@ -472,7 +537,7 @@ function renderLearn(){
     <p class="note">RMSE / avg miss = how far the predicted margin was from the real one, in points (lower is better; a coin-flip line is ~13.5). Brier = win-probability accuracy (0.25 is a coin flip; lower is better). ATS = how the picks would have done. Under ~50 games this bounces around a lot — treat it as a hint, not a verdict.</p>`;
 }
 /* ---------- totals: points scored / allowed per team, shrunk toward league average ---------- */
-const LG_TEAM_PTS = 28.5;                            // FBS average points per team-game
+/* LG_TEAM_PTS (league average points per team-game) comes from the league config */
 const rawAvg = (t, games) => { const gs = games.filter(g => g.final && (g.home===t || g.away===t)); const n = gs.length;
   return n ? {pf: gs.reduce((a,g)=>a+(g.home===t?g.hs:g.as),0)/n, pa: gs.reduce((a,g)=>a+(g.home===t?g.as:g.hs),0)/n} : {pf:LG_TEAM_PTS, pa:LG_TEAM_PTS}; };
 function scoring(t, games = week1){
@@ -616,26 +681,32 @@ function renderLedger(){
   const pl = done.reduce((a,b)=>a+b.profit,0), risked = done.reduce((a,b)=>a+b.stake,0);
   const clvs = bets.map(clvOf).filter(v=>v!=null), avgClv = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
   const openB = bets.filter(b=>!b.result);
+  const otherDel = store.other("betsDeleted", []), otherBets = viewOpts.allLeagues ? store.other("bets", []).filter(b => !otherDel.includes(b.id)).map(b => ({...b, _lg: OTHER})) : [];
+  const oDone = otherBets.filter(b => b.result), oW = oDone.filter(b=>b.result==="W").length, oL = oDone.filter(b=>b.result==="L").length, oP = oDone.filter(b=>b.result==="P").length, oPl = oDone.reduce((a,b)=>a+b.profit,0), oRisk = oDone.reduce((a,b)=>a+b.stake,0);
   const lives = openB.map(betStatus); const nCov = lives.filter(x => x.ok === true).length, nNot = lives.filter(x => x.ok === false).length, nIn = lives.filter(x => x.live).length;
-  const row = b => { const st = b.result ? null : betStatus(b);
-    return `<tr><td>Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?(st?.drift ?? "—"):(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:st.html}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`; };
+  const row = b => { const st = b.result ? null : b._lg ? {html:`<span style="color:var(--ink-2)">open · switch to ${b._lg.label} to update</span>`, drift:null} : betStatus(b);
+    return `<tr><td>${viewOpts.allLeagues ? `<span class="lgtag">${(b._lg || LG).tag}</span>` : ""}Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?(st?.drift ?? "—"):(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:st.html}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`; };
   const settled = done.slice().sort((a,b) => a.ts - b.ts); let run = 0; const curve = settled.map(b => (run += b.profit));
   box.innerHTML = `<h2>Bet log</h2>
-    ${bets.length ? `<div class="ledger-stats"><span>Record <b>${W}–${L}${P?"–"+P:""}</b></span><span>P&amp;L <b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":"−"}$${Math.abs(pl).toFixed(0)}</b> (${(pl/unit>=0?"+":"")}${(pl/unit).toFixed(1)}u)</span><span>ROI <b>${risked?((pl/risked*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)+" pts"}</b></span><span>Open <b>${openB.length}</b>${nIn?` · live <b class="pos">${nCov} covering</b>${nNot?` <b class="neg">${nNot} not</b>`:""}`:""}</span></div>
+    <div class="btns" style="margin:-4px 0 8px"><button class="mini" id="allLg" aria-pressed="${!!viewOpts.allLeagues}" style="margin:0">${viewOpts.allLeagues ? `Showing both leagues` : `Show ${OTHER.label} bets too`}</button></div>
+    ${bets.length || otherBets.length ? `<div class="ledger-stats"><span>Record <b>${W+oW}–${L+oL}${P+oP?"–"+(P+oP):""}</b></span><span>P&amp;L <b class="${pl+oPl>=0?"pos":"neg"}">${pl+oPl>=0?"+":"−"}$${Math.abs(pl+oPl).toFixed(0)}</b> (${((pl+oPl)/unit>=0?"+":"")}${((pl+oPl)/unit).toFixed(1)}u)</span><span>ROI <b>${risked+oRisk?(((pl+oPl)/(risked+oRisk)*100).toFixed(1)+"%"):"—"}</b></span><span>Avg CLV <b>${avgClv==null?"—":(avgClv>0?"+":"")+avgClv.toFixed(2)+" pts"}</b></span><span>Open <b>${openB.length}</b>${nIn?` · live <b class="pos">${nCov} covering</b>${nNot?` <b class="neg">${nNot} not</b>`:""}`:""}</span></div>
     ${curve.length >= 2 ? lineChart(curve.map((v,i) => ({x:i+1, y:v, label:`Bet ${i+1}: ${settled[i].side} · ${settled[i].result} · running ${v>=0?"+":"−"}$${Math.abs(v).toFixed(0)}`, cls: settled[i].result})), {zero:true, fmt: v => (v>=0?"+":"−")+"$"+Math.abs(v).toFixed(0), title:"Running profit, bet by bet"}) : ""}
-    <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${bets.slice().reverse().map(row).join("")}</table></div>
+    <div class="tablewrap"><table><tr><th>Game</th><th>Bet</th><th>Stake</th><th>CLV</th><th>Result</th><th></th></tr>${[...bets, ...otherBets].sort((a,b) => a.ts - b.ts).reverse().map(row).join("")}</table></div>
     <div class="btns"><button id="csv">Export CSV</button></div>
     <p class="note">CLV = closing-line value: how many points better your number was than the line at kickoff. Beating the close consistently is the earliest sign a model is real; a W–L record needs hundreds of bets to say the same thing. 1 unit = your bet-size field.</p>`
     : `<p>No bets logged. Tap <b>Log</b> on a play to record it (side, price, stake, time). The log grades itself, tracks profit in dollars and units, and measures closing-line value.</p>`}`;
-  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { const id = +b.dataset.del; betsDeleted.push(id); store.set("betsDeleted", betsDeleted); bets = bets.filter(x => x.id !== id); saveBets(); render(); }));
+  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { const id = +b.dataset.del;
+    if(!bets.some(x => x.id === id)){ const od = store.other("betsDeleted", []); od.push(id); try{ localStorage.setItem(skey("betsDeleted", OTHER.prefix), JSON.stringify(od)); }catch(_){} render(); return; }   // the other league's bet: mark it deleted there (syncs next time that league loads)
+    betsDeleted.push(id); store.set("betsDeleted", betsDeleted); bets = bets.filter(x => x.id !== id); saveBets(); render(); }));
   box.querySelector("#csv")?.addEventListener("click", exportCsv);
+  box.querySelector("#allLg")?.addEventListener("click", () => { viewOpts.allLeagues = !viewOpts.allLeagues; store.set("view", viewOpts); render(); });
 }
 function exportCsv(){
   const esc = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : String(v);
   const head = ["placed","week","game","type","side","line","price","stake","model_prob","closing","clv","result","profit"];
   const rows = bets.slice().sort((a,b)=>a.ts-b.ts).map(b => [new Date(b.ts).toISOString(), b.week, b.game, b.type, b.side, b.line, b.price, b.stake, b.p?.toFixed(3), b.closing, clvOf(b)?.toFixed(1), b.result || "open", b.result ? b.profit.toFixed(2) : ""]);
   const csv = [head, ...rows].map(r => r.map(esc).join(",")).join("\n");
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = `saturday-edge-bets-${YEAR}.csv`; a.click();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = `${LG.file}-bets-${YEAR}.csv`; a.click();
 }
 /* ---------- one small SVG line chart, used for the bet log and the season view (single series, so no legend) ---------- */
 function lineChart(pts, o = {}){
@@ -748,7 +819,7 @@ function render(){
   const finals = viewOpts.hideFinals && !bestMode ? slate.filter(g => g.final) : [];
   if(finals.length) slate = slate.filter(g => !g.final);
   renderChips(all);
-  if(!all.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = fut ? (future[VW] ? `ESPN has no Week ${VW} slate posted yet.` : `Loading Week ${VW} from ESPN…`) : live ? `ESPN returned no FBS games for Week ${VW}.` : "No games loaded yet. This app has no built-in slate — it needs to reach ESPN. Tap Refresh, or check that you're online."; wrap.appendChild(h); }
+  if(!all.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = fut ? (future[VW] ? `ESPN has no Week ${VW} slate posted yet.` : `Loading Week ${VW} from ESPN…`) : live ? `ESPN returned no ${LG.tag} games for Week ${VW}.` : "No games loaded yet. This app has no built-in slate — it needs to reach ESPN. Tap Refresh, or check that you're online."; wrap.appendChild(h); }
   else if(!slate.length && !finals.length){ const h = document.createElement("div"); h.className="empty"; h.textContent = bestMode ? "No plays clear the 54.5% bar in this filter." : viewOpts.plays ? "No plays in this filter this week." : "No games match this filter this week."; wrap.appendChild(h); }
   if(bestMode){ const h = document.createElement("div"); h.className="record"; h.style.display="block"; h.textContent = slate.length ? `${slate.length} plays this week, strongest first` : "No plays clear the 54.5% bar this week"; wrap.appendChild(h); }
   const H = histFor(VW);
@@ -849,7 +920,7 @@ function render(){
   document.getElementById("wprev").textContent = `◀ Wk ${VW-1}`; document.getElementById("wnext").textContent = `Wk ${VW+1} ▶`;
   document.getElementById("sbWeek").textContent = `Wk ${VW}`;
   document.getElementById("sbInfo").textContent = `ATS ${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}${sN?` · season ${season.W+rec.W}–${season.L+rec.L}`:""}${week2.filter(g=>g.state==="in").length?` · ${week2.filter(g=>g.state==="in").length} live`:""}`;
-  document.title = `Saturday Edge — Week ${VW}`;
+  document.title = `${LG.name} — Week ${VW}`;
   renderLedger(); renderMovers(); renderSeason();
 }
 function tapeRows(g, H){                             // the "why" behind the number: form, pace, ATS record, scoring
@@ -880,7 +951,7 @@ function renderSeason(){
   const pctW = r => r.W+r.L ? Math.round(100*r.W/(r.W+r.L)) : null;
   const split = (label, list, key = x => x.e.ats) => { const r = tally(list.map(key).filter(Boolean)); const p = pctW(r);
     return `<div class="split"><small>${label}</small><b class="${p==null?"":p>=52.4?"pos":"neg"}">${rec(r)}</b><span>${p==null?"":p+"%"}</span></div>`; };
-  const P4 = g => POWER.includes(String(confOf(g.home))) && POWER.includes(String(confOf(g.away)));
+  const P4 = bigGame;
   const weeks = [...new Set(rows.map(r => r.g.week))].sort((a,b)=>a-b);
   const byWeek = weeks.map(wk => { const r = tally(rows.filter(x => x.g.week===wk).map(x => x.e.ats)); const pl = tally(rows.filter(x => x.g.week===wk && x.play).map(x => x.e.ats)); return {wk, r, pl}; });
   let units = 0; const curve = byWeek.map(x => { units += x.pl.W*100/110 - x.pl.L; return {x:`Wk ${x.wk}`, y:+units.toFixed(2), label:`Week ${x.wk}: plays ${rec(x.pl)} · all picks ${rec(x.r)} · running ${units>=0?"+":""}${units.toFixed(1)}u`, cls: x.pl.W >= x.pl.L ? "W" : "L"}; });
@@ -892,7 +963,7 @@ function renderSeason(){
       ${split("All picks", rows)}${split("Plays only", plays)}${split("Passes", rows.filter(r => !r.play))}
       ${split("Favorites", rows.filter(r => r.e.pickHome === (r.e.spread < 0)))}${split("Underdogs", rows.filter(r => r.e.pickHome !== (r.e.spread < 0)))}
       ${split("Home side", rows.filter(r => r.e.pickHome))}${split("Away side", rows.filter(r => !r.e.pickHome))}
-      ${split("Power 4 vs P4", rows.filter(r => P4(r.g)))}${split("Everything else", rows.filter(r => !P4(r.g)))}
+      ${split(NFL ? "Divisional games" : "Power 4 vs P4", rows.filter(r => P4(r.g)))}${split(NFL ? "Non-divisional" : "Everything else", rows.filter(r => !P4(r.g)))}
       ${split("Totals, all", tot, x => x.tr)}${split("Totals, plays", tPlays, x => x.tr)}
     </div>
     <div class="tablewrap"><table><tr><th>Week</th><th>All picks</th><th>Plays</th><th>Hit %</th></tr>${byWeek.map(x => `<tr><td>Week ${x.wk}</td><td>${rec(x.r)}</td><td>${rec(x.pl)}</td><td>${pctW(x.pl)==null?"—":pctW(x.pl)+"%"}</td></tr>`).join("")}</table></div>
@@ -987,14 +1058,14 @@ async function loadInjuries(){
     const r = await j(`${ESPN}/injuries`);
     const out = {};
     for(const team of r.injuries || []){
-      const ab = teamIds[team.id] || norm(team.abbreviation || "");
+      const ab = teamIds[team.id] || norm(team.abbreviation || "") || Object.entries(teamIds).find(([id,a]) => team.displayName && NAMES[a] && team.displayName.endsWith(NAMES[a]))?.[1];
       if(!ab) continue;
       out[ab] = (team.injuries || []).map(i => ({name: i.athlete?.displayName || i.athlete?.shortName || "?", pos: i.athlete?.position?.abbreviation || "", status: i.status || i.type?.description || ""}));
     }
     if(Object.keys(out).length) injuries = out;
   }catch(_){}
 }
-async function loadTeams(){                        // the FBS roster: who counts as FBS, plus display names
+async function loadTeams(){                        // the roster: display names and ESPN ids (and, for college, who counts as FBS)
   try{ const r = await j(`${ESPN}/teams?${FBS_Q}`);
     const list = r.sports?.[0]?.leagues?.[0]?.teams || []; if(!list.length) return;
     const set = new Set();
@@ -1150,7 +1221,7 @@ document.getElementById("notify").addEventListener("click", async () => {
   if(notifyOn){ notifyOn = false; store.local("notify", false); renderNotify(); return; }
   let perm = Notification.permission; if(perm === "default") perm = await Notification.requestPermission();
   notifyOn = perm === "granted"; store.local("notify", notifyOn); renderNotify();
-  if(notifyOn) notify([{title:"Saturday Edge alerts are on", body:"You'll hear about line moves on plays and logged bets while the app is open."}]);
+  if(notifyOn) notify([{title:`${LG.name} alerts are on`, body:"You'll hear about line moves on plays and logged bets while the app is open."}]);
 });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 renderNotify();
@@ -1202,6 +1273,17 @@ function applyTheme(){ const t = store.get("theme","auto"), root = document.docu
 document.getElementById("theme").addEventListener("click", () => { const t = store.get("theme","auto"); store.set("theme", THEMES[(THEMES.indexOf(t)+1) % THEMES.length]); applyTheme(); });
 window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
 applyTheme();
+/* branding + switch */
+(function brand(){
+  document.querySelectorAll(".appName,.sbName").forEach(el => el.textContent = LG.name);
+  document.getElementById("wk").textContent = LG.tag;
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", LG.name);   // read when the page is added to the Home Screen
+  document.querySelectorAll(".method[data-lg]").forEach(el => { el.hidden = el.dataset.lg !== LG.id; });   // the league's own "how it works" text
+  const sw = document.getElementById("lgswitch");
+  sw.querySelectorAll("button").forEach(b => { b.classList.toggle("on", b.dataset.lg === LG.id); b.setAttribute("aria-pressed", b.dataset.lg === LG.id);
+    b.addEventListener("click", () => { if(b.dataset.lg === LG.id) return; try{ localStorage.setItem("edge:league", JSON.stringify(b.dataset.lg)); }catch(_){}
+      location.href = location.pathname + "?league=" + b.dataset.lg; }); });   // a reload is the simplest way to swap every constant, cache and timer
+})();
 async function init(){
   week2.forEach(registerOpen); week1.forEach(registerOpen);
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
@@ -1230,16 +1312,16 @@ async function sharePicks(recap = false){
   if(recap){ L = L.filter(x => x.res && x.res!=="live"); L.sort((a,b) => (a.res==="✓"?0:1) - (b.res==="✓"?0:1) || b.edge - a.edge); }
   else { L = [...L.filter(x => x.strong), ...L.filter(x => !x.strong)]; }        // plays first — a 60-game slate won't fit one image
   const total = L.length; L = L.slice(0, SHARE_MAX);
-  const chipLabel = CHIPS.find(c => c[0]===filterMode)?.[1] || "All FBS";
+  const chipLabel = CHIPS.find(c => c[0]===filterMode)?.[1] || CHIPS[0][1];
   gradeBets(); const wk = bets.filter(b => b.week === VW && b.result); const wkPL = wk.reduce((a,b)=>a+b.profit,0);
   const recW = L.filter(x=>x.res==="✓").length, recL = L.filter(x=>x.res==="✗").length;
-  const text = `Saturday Edge — Week ${VW} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
+  const text = `${LG.name} — Week ${VW} ATS picks\n` + L.map(x => `${x.res?x.res+" ":""}${x.pick} (${x.game}) · covers ${x.cover}${x.strong?"":" · pass"}${x.tot?" · "+x.tot:""}`).join("\n") + `\n${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`;
   try{ await document.fonts.ready; }catch(_){}
   const W = 1080, rowH = 62, top = 230, H = top + L.length*rowH + 90;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
   c.fillStyle = "#F5F4EE"; c.fillRect(0,0,W,H);
   c.fillStyle = "#17263A"; c.fillRect(0,0,W,150);
-  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${VW} RECAP` : "SATURDAY EDGE", 48, 92);
+  c.fillStyle = "#F5F4EE"; c.font = "800 72px 'Barlow Condensed', Impact, sans-serif"; c.fillText(recap ? `WEEK ${VW} RECAP` : LG.name.toUpperCase(), 48, 92);
   c.font = "500 30px Barlow, sans-serif"; c.fillText(recap ? `Model picks ${recW}–${recL} ATS${wk.length?` · logged bets ${wkPL>=0?"+":"−"}$${Math.abs(wkPL).toFixed(0)} on ${wk.length} bet${wk.length>1?"s":""}`:""}` : `Week ${VW} · ${chipLabel} · ${total > L.length ? `top ${L.length} of ${total} · ` : ""}${Math.round(w*100)}% stats / ${Math.round((1-w)*100)}% market`, 48, 132);
   c.fillStyle = "#5B6778"; c.font = "600 24px Barlow, sans-serif"; c.fillText("PICK", 48, top-24); c.fillText("GAME", 400, top-24); c.fillText("WIN %", 640, top-24); c.fillText("COVER", 780, top-24); c.fillText("TOTAL", 900, top-24);
   L.forEach((x,i) => { const y = top + i*rowH;
@@ -1250,7 +1332,7 @@ async function sharePicks(recap = false){
     if(x.res){ c.fillStyle = x.res==="✓" ? "#2E7D4F" : x.res==="✗" ? "#D9532B" : "#5B6778"; c.font = "700 30px Barlow, sans-serif"; c.fillText(x.res, 1000, y); } });
   c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = cover chance ≥ ${Math.round(PLAY_MIN*100)}%. Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
-  const file = new File([blob], `saturday-edge-week${VW}${recap?"-recap":""}.png`, {type:"image/png"});
+  const file = new File([blob], `${LG.file}-week${VW}${recap?"-recap":""}.png`, {type:"image/png"});
   try{
     if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:`Week ${VW} picks`, text}); return; }
     if(navigator.share){ await navigator.share({title:`Week ${VW} picks`, text}); return; }
