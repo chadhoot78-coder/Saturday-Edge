@@ -123,7 +123,9 @@
   .move.with{color:var(--turf-deep);background:var(--with-bg)} .move.against{color:var(--flag);background:var(--against-bg)}
   .lean{margin-top:8px;font-size:14px;font-weight:600;color:var(--flag)}
   .lean.none{color:var(--ink-2);font-weight:400}
-  .lean-note{font-weight:500;color:var(--ink-2)} .lean.angles{font-weight:400;color:var(--ink-2);font-size:13px;margin-top:5px}
+  .lean-note{font-weight:500;color:var(--ink-2)}
+  .book{display:inline-block;font-size:12px;font-weight:600;color:var(--ink);background:var(--chalk);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+  .odds{margin-top:8px;font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap} .odds .linkish{background:none;border:none;padding:0;color:var(--ink);text-decoration:underline;font-size:13px;font-weight:600} .lean.angles{font-weight:400;color:var(--ink-2);font-size:13px;margin-top:5px}
   .angle{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-radius:10px;margin:2px 2px 0 0;color:var(--ink-2);background:var(--chalk)} .angle.ok{border-color:var(--turf);color:var(--turf-deep);font-weight:600;background:var(--with-bg)}
 
   .detail{display:none;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px}
@@ -232,6 +234,7 @@
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
     <div class="chips viewchips" id="viewchips" role="group" aria-label="View options"></div>
     <div class="auth" id="auth"></div>
+    <div class="odds" id="oddsStatus"></div>
     <div class="coffee"><a href="https://venmo.com/u/chadhoot1978" target="_blank" rel="noopener" title="Venmo @chadhoot1978">☕ Buy me a coffee</a><span>if the app's earned it · Venmo @chadhoot1978</span></div>
     <div class="hint" id="hint">Gold = away, green = home. The dark tick is where the betting line puts it. Tap a game for the numbers.</div>
   </section>
@@ -246,7 +249,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.5</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.6</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -261,6 +264,7 @@
     <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the FBS average of 28.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 16-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
     <p><b>Past and future weeks.</b> The ◀ ▶ arrows step through the season. A past week is re-scored with only the ratings that existed before it kicked off (the same walk-forward rule as the backtest), so what you see is what the model would have said that Saturday, not hindsight. Future weeks show whatever lines the books have posted.</p>
     <p><b>Alerts.</b> Turn on Alerts and the app sends a notification when a line moves half a point or more on a play or a logged bet. It checks while the app is open or in a background tab; this is a one-file app with no server, so it can't wake a closed phone.</p>
+    <p><b>Line shopping.</b> With a free key from the-odds-api.com pasted in, every upcoming game shows the best available number for the pick's side across the US books (and DraftKings' number on hover), and <b>Log</b> records that book, line and price instead of the consensus at -110. Getting +3.5 where the consensus says +3 is worth more over a season than any model tweak. The model itself still reads ESPN's consensus line.</p>
     <p><b>Learning.</b> After each completed week the app replays the season: for every past week it rebuilds ratings from only the weeks before, predicts that week, and scores each stats/market weight and shrink speed against the real margins. The <b>Auto</b> button uses whatever backtested best. With 60-odd FBS games a week it has something to say after Week 3.</p>
     <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
     <p><b>Model line.</b> Home rating − away rating + 2.5 pts home field (0 at a neutral site).</p>
@@ -278,6 +282,7 @@
     <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the league average of 22.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 13.5-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
     <p><b>Past and future weeks.</b> The ◀ ▶ arrows step through the season. A past week is re-scored with only the ratings that existed before it kicked off (the same walk-forward rule as the backtest), so what you see is what the model would have said that Sunday, not hindsight. Future weeks show whatever lines the books have posted.</p>
     <p><b>Alerts.</b> Turn on Alerts and the app sends a notification when a line moves half a point or more on a play or a logged bet. It checks while the app is open or in a background tab; this is a one-file app with no server, so it can't wake a closed phone.</p>
+    <p><b>Line shopping.</b> With a free key from the-odds-api.com pasted in, every upcoming game shows the best available number for the pick's side across the US books (and DraftKings' number on hover), and <b>Log</b> records that book, line and price instead of the consensus at -110. Getting +3.5 where the consensus says +3 is worth more over a season than any model tweak. The model itself still reads ESPN's consensus line.</p>
     <p><b>Learning.</b> After each completed week the app replays the season: for every past week it rebuilds ratings from only the weeks before, predicts that week, and scores each stats/market weight and shrink speed against the real margins. The <b>Auto</b> button uses whatever backtested best. It needs at least one week of games after Week 1 to have anything to learn from.</p>
     <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
     <p><b>Model line.</b> Home rating − away rating + 1.5 pts home field (0 at a neutral site).</p>
@@ -330,7 +335,7 @@ let CUR = Math.max(1, Math.min(MAX_WEEK, 1 + Math.floor((Date.now() - WEEK1_ROLL
 const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
 const KELLY_CAP = 0.05;                              // never suggest more than 5% of the bankroll on one bet, whatever the math says
 let VIEW = null;                                     // the week on screen; null = the current week (CUR)
-const GLOBAL_KEYS = ["theme","notify","view","geo"];   // settings shared by both leagues; everything else is per league
+const GLOBAL_KEYS = ["theme","notify","view","geo","oddsKey"];   // settings shared by both leagues; everything else is per league
 const skey = (k, prefix = LG.prefix) => (GLOBAL_KEYS.includes(k) ? "edge:" : prefix) + k;
 const store = { get(k,d){ try{ const v = localStorage.getItem(skey(k)); return v==null ? d : JSON.parse(v); }catch(_){ return d; } },
                 set(k,v){ this.local(k,v); if(SYNC_KEYS.includes(k)) cloud.put(k,v); },
@@ -710,10 +715,48 @@ const dec = ml => ml > 0 ? 1 + ml/100 : 1 + 100/(-ml);
 function kelly(p, ml){ const b = dec(ml) - 1, f = (b*p - (1-p))/b; return Math.max(0, f); }
 const kellyStake = (p, ml) => { const f = kelly(p, ml); if(f <= 0) return {amt:0, f, capped:false}; const raw = f/2, capped = raw > KELLY_CAP; return {amt: Math.min(raw, KELLY_CAP) * bankroll(), f, capped}; };
 const kellyText = (p, ml) => { const k = kellyStake(p, ml); if(k.amt <= 0) return ""; return ` · ½-Kelly $${k.amt.toFixed(0)}${k.capped ? ` <span title="half-Kelly would be ${(k.f*50).toFixed(0)}% of the bankroll; capped at ${KELLY_CAP*100}%">(capped)</span>` : ` (${(k.f*100).toFixed(1)}% full)`}`; };
-function logBet(g, type, side, line, price, p){
+/* ---------- line shopping: live spreads and totals from every US book via The Odds API (free key, ~2 credits per refresh) ----------
+   The model still uses ESPN's consensus number; this is about the number you can actually get. Best = the most favorable point for the
+   pick's side, then the best price. Log takes the best book's line and price, so the ledger and CLV reflect real bets. */
+let ODDS = store.get("odds", null), oddsBusy = false;
+const ODDS_SPORT = NFL ? "americanfootball_nfl" : "americanfootball_ncaaf", BOOK_NAMES = {draftkings:"DK", fanduel:"FD", betmgm:"MGM", caesars:"CZR", betrivers:"BR", pointsbetus:"PB", espnbet:"ESPN Bet", fanatics:"Fanatics", bovada:"Bovada", betonlineag:"BOL", williamhill_us:"CZR", unibet_us:"Unibet", wynnbet:"Wynn", superbook:"SB", lowvig:"LowVig", mybookieag:"MyBookie", betus:"BetUS", hardrockbet:"HardRock", ballybet:"Bally", betparx:"betPARX", fliff:"Fliff", novig:"Novig", prophetx:"ProphetX"};
+const oddsKey = () => store.get("oddsKey", "");
+const nameKey = n => (n || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+function oddsFor(g){ if(!ODDS?.games) return null; const h = nameKey(names[g.home]?.full), a = nameKey(names[g.away]?.full); if(!h || !a) return null;
+  return ODDS.games.find(x => x.h === h && x.a === a) || ODDS.games.find(x => (x.h.endsWith(h.split(" ").pop()) && x.a.endsWith(a.split(" ").pop()))) || null; }
+function bestLine(g, type, side){                   // -> {book, point, price, dk:{point,price}} for the given side ("Over"/"Under" or a team)
+  const o = oddsFor(g); if(!o) return null; let best = null, dk = null;
+  for(const b of o.books){ const m = type === "total" ? b.total?.[side === "Over" ? "over" : "under"] : b.spread?.[side === g.home ? "home" : "away"]; if(!m || m.point == null) continue;
+    const better = !best || (type === "total" ? (side === "Over" ? m.point < best.point : m.point > best.point) : m.point > best.point) || (m.point === best.point && m.price > best.price);
+    if(better) best = {book: BOOK_NAMES[b.key] || b.title, point: m.point, price: m.price};
+    if(b.key === "draftkings") dk = {point: m.point, price: m.price}; }
+  return best ? {...best, dk, books: o.books.length} : null; }
+async function loadOdds(force = false){
+  const key = oddsKey(); if(!key || oddsBusy) return; const fresh = ODDS && Date.now() - ODDS.ts < 30*60e3; if(fresh && !force) return;
+  const upcoming = week2.some(g => g.state === "pre" && g.ts - Date.now() < 4*864e5); if(!upcoming && !force) return;
+  oddsBusy = true; renderOddsStatus("fetching lines…");
+  try{ const r = await fetch(`https://api.the-odds-api.com/v4/sports/${ODDS_SPORT}/odds/?apiKey=${encodeURIComponent(key)}&regions=us&markets=spreads,totals&oddsFormat=american`);
+    if(!r.ok){ const msg = r.status === 401 ? "key rejected" : r.status === 429 ? "out of credits this month" : `error ${r.status}`; ODDS = {...(ODDS||{}), err: msg}; renderOddsStatus(); return; }
+    const data = await r.json(), remaining = r.headers.get("x-requests-remaining");
+    const games = data.map(ev => ({h: nameKey(ev.home_team), a: nameKey(ev.away_team), t: +new Date(ev.commence_time), books: ev.bookmakers.map(b => { const sp = b.markets.find(m => m.key === "spreads"), to = b.markets.find(m => m.key === "totals");
+      const pick = (mk, name) => { const oc = mk?.outcomes?.find(x => nameKey(x.name) === nameKey(name)); return oc ? {point: oc.point, price: oc.price} : null; };
+      return {key: b.key, title: b.title, spread: sp ? {home: pick(sp, ev.home_team), away: pick(sp, ev.away_team)} : null, total: to ? {over: pick(to, "Over"), under: pick(to, "Under")} : null}; }) }));
+    ODDS = {ts: Date.now(), games, remaining, err: null}; store.local("odds", ODDS); render();
+  }catch(err){ ODDS = {...(ODDS||{}), err: "couldn't reach The Odds API"}; }
+  finally{ oddsBusy = false; renderOddsStatus(); }
+}
+function renderOddsStatus(msg){ const el = document.getElementById("oddsStatus"); if(!el) return;
+  if(!oddsKey()){ el.innerHTML = `<span>Line shopping is off.</span><button class="linkish" id="oddsAdd">Add an Odds API key</button>`; el.querySelector("#oddsAdd").onclick = setOddsKey; return; }
+  const when = ODDS?.ts ? new Date(ODDS.ts).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : null;
+  el.innerHTML = `<span>${msg ? msg : ODDS?.err ? `Lines: ${ODDS.err}` : when ? `Lines from ${new Set(ODDS.games.flatMap(x => x.books.map(b => b.key))).size} books · ${when}${ODDS.remaining ? ` · ${ODDS.remaining} credits left` : ""}` : "Lines: not fetched yet"}</span><button class="linkish" id="oddsRefresh">Refresh</button><button class="linkish" id="oddsKeyBtn" title="Change or remove the key">key</button>`;
+  el.querySelector("#oddsRefresh").onclick = () => loadOdds(true); el.querySelector("#oddsKeyBtn").onclick = setOddsKey; }
+function setOddsKey(){ const k = prompt("Paste your key from the-odds-api.com (free plan: 500 credits a month; a refresh here costs 2). Leave blank to turn line shopping off.", oddsKey() || ""); if(k == null) return;
+  store.local("oddsKey", k.trim()); ODDS = null; store.local("odds", null); renderOddsStatus(); if(k.trim()) loadOdds(true); else render(); }
+const bookTxt = (b) => b ? ` <span class="book" title="best available: ${b.book} ${b.point>0?"+":""}${b.point} (${mlText(b.price)})${b.dk?` · DraftKings ${b.dk.point>0?"+":""}${b.dk.point} (${mlText(b.dk.price)})`:""} · ${b.books} books">best ${b.book} ${b.point>0?"+":""}${b.point} ${mlText(b.price)}</span>` : "";
+function logBet(g, type, side, line, price, p, book = null){
   const st = +(prompt(`Stake for ${side} ${type==="total"?line:type==="spread"?(line>0?"+":"")+line:mlText(price)} at ${mlText(price)}?`, Math.max(1, Math.round(kellyStake(p,price).amt || stake())) ) || 0);
   if(!st) return;
-  bets.push({id: Date.now(), key: gkey(g), week: g.week, game: `${g.away} @ ${g.home}`, home: g.home, away: g.away, type, side, line, price, stake: st, p, ts: Date.now(), closing: null, result: null, profit: 0});
+  bets.push({id: Date.now(), key: gkey(g), week: g.week, game: `${g.away} @ ${g.home}`, home: g.home, away: g.away, type, side, line, price, stake: st, p, ts: Date.now(), closing: null, result: null, profit: 0, book});
   saveBets(); render();
 }
 function gradeBets(){
@@ -773,7 +816,7 @@ function renderLedger(){
   const oDone = otherBets.filter(b => b.result), oW = oDone.filter(b=>b.result==="W").length, oL = oDone.filter(b=>b.result==="L").length, oP = oDone.filter(b=>b.result==="P").length, oPl = oDone.reduce((a,b)=>a+b.profit,0), oRisk = oDone.reduce((a,b)=>a+b.stake,0);
   const lives = openB.map(betStatus); const nCov = lives.filter(x => x.ok === true).length, nNot = lives.filter(x => x.ok === false).length, nIn = lives.filter(x => x.live).length;
   const row = b => { const st = b.result ? null : b._lg ? {html:`<span style="color:var(--ink-2)">open · switch to ${b._lg.label} to update</span>`, drift:null} : betStatus(b);
-    return `<tr><td>${viewOpts.allLeagues ? `<span class="lgtag">${(b._lg || LG).tag}</span>` : ""}Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}</td><td>$${b.stake}</td><td>${clvOf(b)==null?(st?.drift ?? "—"):(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:st.html}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`; };
+    return `<tr><td>${viewOpts.allLeagues ? `<span class="lgtag">${(b._lg || LG).tag}</span>` : ""}Wk ${b.week} ${b.game}</td><td>${b.side} ${b.type==="total"?b.line:b.type==="spread"?((b.line>0?"+":"")+b.line):"ML"} @ ${mlText(b.price)}${b.book?` <span class="lgtag">${b.book}</span>`:""}</td><td>$${b.stake}</td><td>${clvOf(b)==null?(st?.drift ?? "—"):(clvOf(b)>0?"+":"")+clvOf(b).toFixed(1)}</td><td>${b.result?`<span class="grade ${b.result}">${b.result==="W"?"+"+b.profit.toFixed(0):b.result==="L"?b.profit.toFixed(0):"push"}</span>`:st.html}</td><td><button class="mini" data-del="${b.id}" aria-label="delete bet">×</button></td></tr>`; };
   const settled = done.slice().sort((a,b) => a.ts - b.ts); let run = 0; const curve = settled.map(b => (run += b.profit));
   box.innerHTML = `<h2>Bet log</h2>
     <div class="btns" style="margin:-4px 0 8px"><button class="mini" id="allLg" aria-pressed="${!!viewOpts.allLeagues}" style="margin:0">${viewOpts.allLeagues ? `Showing both leagues` : `Show ${OTHER.label} bets too`}</button></div>
@@ -791,8 +834,8 @@ function renderLedger(){
 }
 function exportCsv(){
   const esc = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : String(v);
-  const head = ["placed","week","game","type","side","line","price","stake","model_prob","closing","clv","result","profit"];
-  const rows = bets.slice().sort((a,b)=>a.ts-b.ts).map(b => [new Date(b.ts).toISOString(), b.week, b.game, b.type, b.side, b.line, b.price, b.stake, b.p?.toFixed(3), b.closing, clvOf(b)?.toFixed(1), b.result || "open", b.result ? b.profit.toFixed(2) : ""]);
+  const head = ["placed","week","game","type","side","line","price","book","stake","model_prob","closing","clv","result","profit"];
+  const rows = bets.slice().sort((a,b)=>a.ts-b.ts).map(b => [new Date(b.ts).toISOString(), b.week, b.game, b.type, b.side, b.line, b.price, b.book || "", b.stake, b.p?.toFixed(3), b.closing, clvOf(b)?.toFixed(1), b.result || "open", b.result ? b.profit.toFixed(2) : ""]);
   const csv = [head, ...rows].map(r => r.map(esc).join(",")).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = `${LG.file}-bets-${YEAR}.csv`; a.click();
 }
@@ -930,7 +973,7 @@ function render(){
         grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
       const canLog = !g.final && g.state!=="in" && !past;
       const gateTxt = strong ? ` <span class="grade W" title="Lab: picks this far off the line covered ${labPct(e.gate.n, e.gate.pct)}">PLAY · Lab ${Math.round(e.gate.pct*100)}%</span>` : ` <span class="lean-note" title="${e.gate.n ? `Lab: picks ${e.gate.lo}–${e.gate.hi===99?"":e.gate.hi} pts off the line covered ${labPct(e.gate.n, e.gate.pct)} — not enough to bet` : "no Lab record for this size of disagreement"}">(lean${e.gate.n ? ` · Lab ${Math.round(e.gate.pct*100)}%` : ""})</span>`;
-      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${gateTxt}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
+      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${gateTxt}${!g.final&&g.state!=="in"?bookTxt(bestLine(g,"spread",side)):""}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
     }
     const t = evalTotal(g, w);
     if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = t.play;
@@ -939,7 +982,7 @@ function render(){
       else if(g.state==="in"){ tg = ` <span class="grade">${g.hs+g.as} so far</span>`; }
       const canLogT = !g.final && g.state!=="in" && !past;
       const tGate = tStrong ? ` <span class="grade W" title="Lab: projections this far off the number hit ${labPct(t.gate.n, t.gate.pct)}">PLAY · Lab ${Math.round(t.gate.pct*100)}%</span>` : ` <span class="lean-note" title="${t.gate.n ? `Lab: projections ${t.gate.lo}–${t.gate.hi===99?"":t.gate.hi} pts off the number hit ${labPct(t.gate.n, t.gate.pct)}` : "no Lab record"}">(lean${t.gate.n ? ` · Lab ${Math.round(t.gate.pct*100)}%` : ""})</span>`;
-      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${t.wx.pts?` <span class="wx bad" title="${t.wx.text}">(wx −${t.wx.pts.toFixed(1)})</span>`:""}${tGate}${tStrong&&!past?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
+      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${t.wx.pts?` <span class="wx bad" title="${t.wx.text}">(wx −${t.wx.pts.toFixed(1)})</span>`:""}${tGate}${!g.final&&g.state!=="in"?bookTxt(bestLine(g,"total",t.pick)):""}${tStrong&&!past?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
     const angles = (!g.final && e.market != null && !e.fcs) ? anglesFor(rowFor(g, e, t)) : [];
     if(angles.length) lean += `<div class="lean angles">${angles.map(a => `<span class="angle ${a.ok?"ok":""}" title="${a.label}: this side has covered ${labPct(a.n, a.pct)} in the Lab${a.ok?" — a play":""}">${a.ok?"PLAY · ":""}${a.label} → ${a.side}${a.pct!=null?` · ${Math.round(a.pct*100)}%`:""}</span>`).join(" ")}</div>`;
     const anyPlay = e.play || !!t?.play || angles.some(a => a.ok);
@@ -1108,9 +1151,10 @@ function moveText(g,e){ if(!e.move) return ""; const toward = e.move<0 ? g.home 
   return ` <span class="move ${withYou?"with":"against"}">${withYou?"▲":"▼"} opened ${spreadText(g,g.open).replace(/^\w+ /,"")}</span>`; }
 function bindLogs(card, g, pHome){
   card.querySelectorAll("[data-log]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation();
-    const t = b.dataset.log, side = b.dataset.side, line = +b.dataset.line, p = +b.dataset.p;
-    const price = t==="ml" ? (side===g.home ? g.mlH : g.mlA) : -110;
-    logBet(g, t, side, t==="ml"?null:line, price, p); }));
+    const t = b.dataset.log, side = b.dataset.side; let line = +b.dataset.line, p = +b.dataset.p, book = null;
+    let price = t==="ml" ? (side===g.home ? g.mlH : g.mlA) : -110;
+    if(t !== "ml"){ const best = bestLine(g, t, side); if(best){ line = best.point; price = best.price; book = best.book; } }   // take the best number on the board
+    logBet(g, t, side, t==="ml"?null:line, price, p, book); }));
 }
 function bindCard(card, onSpread){
   card.setAttribute("role","button"); card.setAttribute("aria-expanded", card.classList.contains("open"));
@@ -1549,11 +1593,13 @@ function renderLab(status){
 async function init(){
   week2.forEach(registerOpen); week1.forEach(registerOpen);
   if(!EPA) loadEpa().then(() => { if(live){ ratings = buildRatings(); backtest(); render(); } });
+  renderOddsStatus();
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
   cloud.init().catch(err => { cloud.msg = "Sync unavailable: " + err.message; renderAuth(); });
   try{ await loadLive(); }
   catch(err){ document.getElementById("status").innerHTML = `<span><b>Couldn't reach ESPN</b></span><span>${week2.length ? "showing the last slate loaded" : "no games loaded"}</span><span>tap Refresh to retry</span>`; }
   backtest(); ratings = buildRatings(); render(); schedulePoll();
+  loadOdds();
 }
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x===b));
