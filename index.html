@@ -485,7 +485,7 @@ function marketRatings(uptoWeek, src = null, tag = "live"){   // team -> rating 
    A game's EPA margin (home offense total EPA − away offense total EPA) is the score margin with the luck taken out: no special-teams
    flukes, no garbage-time noise, every play weighted by what it was worth. EPA_SHARE says how much of a game's "performance" comes
    from that instead of the raw margin/yards/turnovers line. The Inputs button turns it off; the Lab measures whether it helps. */
-let EPA = null, EPA_ON = store.get("epa", true), EPA_UPDATED = null; const EPA_SHARE = 0.6;
+let EPA = null, EPA_ON = store.get("epa", false), EPA_UPDATED = null; const EPA_SHARE = 0.6;   // off by default: the Lab found it didn't beat margin inputs in the NFL (529 games)
 async function loadEpa(){ try{ const r = await fetch(`data/epa-${LG.id}.json?v=${Math.floor(Date.now()/36e5)}`); if(r.ok){ const d = await r.json(); EPA = d.seasons || null; EPA_UPDATED = d.updated || null; } }catch(_){} renderInputs(); }
 const epaOf = g => { const s = EPA?.[String(g.season ?? YEAR)]?.[String(g.week)]; if(!s) return null; const h = s[g.home], a = s[g.away]; return h && a && h.tot != null && a.tot != null ? {h, a} : null; };
 const epaSeason = (t, H) => { let o = 0, d = 0, n = 0; for(const g of H){ if(!g.final || (g.home !== t && g.away !== t)) continue; const e = EPA?.[String(g.season ?? YEAR)]?.[String(g.week)]?.[t]; if(e && e.o != null && e.d != null){ o += e.o; d += e.d; n++; } } return n ? {o: o/n, d: d/n, n} : null; };
