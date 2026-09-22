@@ -172,8 +172,8 @@
   .ghost{border:1.5px dashed var(--line);border-radius:var(--r);opacity:.5}
   @media (min-width:900px){
     .wrap{max-width:1500px;padding:0 28px;display:grid;grid-template-columns:300px minmax(0,1fr) minmax(0,1fr);column-gap:26px;align-items:start;
-      grid-template-areas:"head head head" "side alerts alerts" "side nav nav" "side record record" "side games games" "side season season" "side ledger movers" "side learn method" "side disc disc"}
-    .wrap > #weeknav{grid-area:nav} .wrap > #season{grid-area:season}
+      grid-template-areas:"head head head" "side alerts alerts" "side nav nav" "side record record" "side games games" "side season season" "side lab lab" "side ledger movers" "side learn method" "side disc disc"}
+    .wrap > #weeknav{grid-area:nav} .wrap > #season{grid-area:season} .wrap > #lab{grid-area:lab}
     #stickybar{display:none!important}
     .wrap > header{grid-area:head}
     .wrap > .controls{grid-area:side;position:sticky;top:12px;margin-top:14px;padding:14px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card);max-height:calc(100vh - 24px);overflow:auto}
@@ -239,10 +239,11 @@
   <div id="games"></div>
 
   <section class="method" id="season"></section>
+  <section class="method" id="lab"></section>
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.2</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.3</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -464,9 +465,9 @@ const Phi = z => { const t = 1/(1+0.2316419*Math.abs(z)); const d = 0.3989423*Ma
    "average": the original v1–v4 behaviour — every FBS team starts at 0, which in September leans the model toward every underdog. */
 let PRIOR = store.get("prior", "market");
 const mktCache = {};
-function marketRatings(uptoWeek){                    // team -> rating implied by the spreads of games in weeks <= uptoWeek
-  const pool = [...week1, ...week2, ...Object.values(future).flat()].filter(g => g.spread != null && g.week <= uptoWeek);
-  const key = `${uptoWeek}|${pool.length}|${pool.reduce((a,g)=>a+g.spread,0).toFixed(1)}`; if(mktCache[key]) return mktCache[key];
+function marketRatings(uptoWeek, src = null, tag = "live"){   // team -> rating implied by the spreads of games in weeks <= uptoWeek (src: another season's games, for the Lab)
+  const pool = (src || [...week1, ...week2, ...Object.values(future).flat()]).filter(g => g.spread != null && g.week <= uptoWeek);
+  const key = `${tag}|${uptoWeek}|${pool.length}|${pool.reduce((a,g)=>a+g.spread,0).toFixed(1)}`; if(mktCache[key]) return mktCache[key];
   const obs = {};
   for(const g of pool){ const m = -g.spread - (g.neutral ? 0 : HFA);   // the market's expected home margin, home field removed
     if(isFBS(g.home)) (obs[g.home] ||= []).push({v:m, opp:g.away}); if(isFBS(g.away)) (obs[g.away] ||= []).push({v:-m, opp:g.home}); }
@@ -479,10 +480,10 @@ function marketRatings(uptoWeek){                    // team -> rating implied b
   }
   return mktCache[key] = r;
 }
-function buildRatings(games = week1, K = K_SHRINK){
+function buildRatings(games = week1, K = K_SHRINK, src = null, prior = PRIOR, tag = "live"){
   const perf = {};                                   // team -> [{v, opp}]
   const upto = games.length ? Math.max(...games.map(g => g.week)) + 1 : CUR;   // lines through the week being predicted are known before kickoff
-  const mkt = PRIOR === "market" ? marketRatings(Math.min(upto, MAX_WEEK)) : null;
+  const mkt = prior === "market" ? marketRatings(Math.min(upto, MAX_WEEK), src, tag) : null;
   for(const g of games){
     if(!g.final) continue;
     const m = Math.max(-MARGIN_CAP, Math.min(MARGIN_CAP, g.hs - g.as)), st = g.stats || {};
@@ -593,7 +594,7 @@ function scoring(t, games = week1){
   const k = n/(n+K_SHRINK);                          // same trust curve as the ratings
   return {pf: LG_TEAM_PTS + k*(pf-LG_TEAM_PTS), pa: LG_TEAM_PTS + k*(pa-LG_TEAM_PTS), n};
 }
-function projectTotal(g){ const H = histFor(g.week), h = scoring(g.home, H), a = scoring(g.away, H);
+function projectTotal(g, H = histFor(g.week)){ const h = scoring(g.home, H), a = scoring(g.away, H);
   return (h.pf + a.pa)/2 + (a.pf + h.pa)/2; }       // home expected pts + away expected pts
 /* ---------- weather: only the total moves; the side is the market's problem ---------- */
 function wxAdj(g){                                   // points to take off the projected total, and why
@@ -965,7 +966,7 @@ function render(){
   document.getElementById("sbWeek").textContent = `${LG.label} Wk ${VW}`;
   document.getElementById("sbInfo").textContent = `ATS ${rec.W}–${rec.L}${rec.P?"–"+rec.P:""}${sN?` · season ${season.W+rec.W}–${season.L+rec.L}`:""}${week2.filter(g=>g.state==="in").length?` · ${week2.filter(g=>g.state==="in").length} live`:""}`;
   document.title = `${LG.name} · ${LG.label} — Week ${VW}`;
-  renderLedger(); renderMovers(); renderSeason();
+  renderLedger(); renderMovers(); renderSeason(); if(!labBusy) renderLab();
   if(modalKey){ const fresh = wrap.querySelector(`.game[data-key="${CSS.escape(modalKey)}"]`); if(fresh) openModal(fresh); else closeModal(); }   // a poll re-rendered the board: swap in the fresh card
 }
 /* ---------- desktop popup: the real card is moved into the dialog (so its buttons and inputs keep working) and moved back on close ---------- */
@@ -1340,6 +1341,135 @@ function applyTheme(){ const t = store.get("theme","auto"), root = document.docu
 document.getElementById("theme").addEventListener("click", () => { const t = store.get("theme","auto"); store.set("theme", THEMES[(THEMES.indexOf(t)+1) % THEMES.length]); applyTheme(); });
 window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
 applyTheme();
+/* ---------- the Lab: run the model over past seasons so ideas are judged on thousands of games, not this week's ----------
+   Data comes from ESPN's archived scoreboards and box scores (final, spread, total, yards/play, turnovers per game), fetched once
+   per season and kept on this device. The evaluation is walk-forward inside each season, exactly like the in-season backtest. */
+const LAB_YEARS = [2023, 2024, 2025];
+let labBusy = false, labAbort = false, labStatus = "", labResults = store.get("lab", null);
+const labKey = y => skey(`lab:${y}`);
+function labLoad(y){ try{ const v = localStorage.getItem(labKey(y)); return v ? JSON.parse(v).map(r => ({week:r[0], home:r[1], away:r[2], hs:r[3], as:r[4], neutral:!!r[5], spread:r[6], ou:r[7], final:true, ts:r[12] || 0,
+  stats:{ypp:{[r[1]]:r[8], [r[2]]:r[9]}, to:{[r[1]]:r[10], [r[2]]:r[11]}}})) : null; }catch(_){ return null; } }
+function labSave(y, games){ const rows = games.map(g => [g.week, g.home, g.away, g.hs, g.as, g.neutral?1:0, g.spread, g.ou, g.stats?.ypp?.[g.home] ?? null, g.stats?.ypp?.[g.away] ?? null, g.stats?.to?.[g.home] ?? null, g.stats?.to?.[g.away] ?? null, g.ts]);
+  try{ localStorage.setItem(labKey(y), JSON.stringify(rows)); return true; }catch(_){ return false; } }
+async function labFetchSeason(y, onProgress){
+  const games = [], jobs = [];
+  for(let wk = 1; wk <= MAX_WEEK; wk++){
+    if(labAbort) throw new Error("stopped");
+    let sb; try{ sb = await j(`${ESPN}/scoreboard?seasontype=2&week=${wk}&dates=${y}&${FBS_Q}`); }catch(_){ continue; }
+    const evs = (sb.events || []).filter(ev => ev.status?.type?.completed);
+    if(!evs.length && wk > 3) break;
+    for(const ev of evs){
+      const c = ev.competitions[0]; const h = c.competitors.find(x=>x.homeAway==="home"), a = c.competitors.find(x=>x.homeAway==="away"); if(!h || !a) continue;
+      if(!NFL){ const ok = t => { const cf = t.team?.conferenceId; return cf != null && cf !== "" ? FBS_CONF.has(String(cf)) : true; }; if(!ok(h) || !ok(a)) continue; }   // FBS vs FBS only
+      const g = {week:wk, home:norm(h.team.abbreviation), away:norm(a.team.abbreviation), hs:+h.score, as:+a.score, neutral:!!c.neutralSite, ts:+new Date(ev.date), final:true, spread:null, ou:null, stats:null};
+      jobs.push(async () => { if(labAbort) return; const st = await fetchBox(ev.id, false, true); if(!st) return;
+        const fake = st.pc ? {odds:[st.pc]} : null; if(fake){ g.spread = parseSpread(fake, g.home, g.away); g.ou = parseTotal(fake); }
+        g.stats = {ypp: st.ypp || {}, to: st.to || {}}; });
+      games.push(g);
+    }
+    onProgress(`${y} · schedule week ${wk} · ${games.length} games`);
+  }
+  await pool(jobs, 8, (d, n) => { if(d % 20 === 0 || d === n) onProgress(`${y} · box scores ${d}/${n}`); });
+  if(labAbort) throw new Error("stopped");
+  return games.filter(g => g.spread != null);
+}
+/* walk-forward evaluation of one season with one prior; returns per-game rows with the model line and market line */
+function labEvaluate(games, prior, tag){
+  const rows = [], weeks = [...new Set(games.map(g => g.week))].sort((a,b)=>a-b);
+  const totCache = {};
+  for(const wk of weeks){ if(wk < 2) continue;
+    const hist = games.filter(g => g.week < wk); if(!hist.length) continue;
+    const r = buildRatings(hist, K_SHRINK, games, prior, tag);
+    for(const g of games.filter(x => x.week === wk)){
+      if(!(g.home in r) || !(g.away in r)) continue;
+      const model = r[g.home] - r[g.away] + (g.neutral ? 0 : HFA), market = -g.spread, actual = g.hs - g.as;
+      const totModel = g.ou != null ? projectTotal(g, hist) : null;
+      rows.push({wk, g, model, market, actual, cover: actual + g.spread, totModel, totActual: g.hs + g.as, ou: g.ou, fav: g.spread < 0 ? "home" : g.spread > 0 ? "away" : "pick", big: Math.abs(g.spread) >= 10, div: NFL && isDivGame(g)});
+    }
+  }
+  return rows;
+}
+function labSummarize(rows){
+  const rec = (list, pickHomeFn) => { const r = {W:0,L:0,P:0}; for(const x of list){ const ph = pickHomeFn(x); if(ph == null || x.cover === 0){ if(x.cover===0 && ph!=null) r.P++; continue; } ((x.cover > 0) === ph) ? r.W++ : r.L++; } return r; };
+  const pctOf = r => r.W + r.L ? r.W / (r.W + r.L) : null;
+  const weights = [0, .1, .2, .3, .35, .5, .7, 1];
+  const sweep = weights.map(w => { const blend = x => w*x.model + (1-w)*x.market; const se = rows.reduce((a,x) => a + (blend(x) - x.actual)**2, 0);
+    const r = rec(rows, x => { const b = blend(x); return b === x.market ? null : b > x.market; }); return {w, rmse: Math.sqrt(se / rows.length), ...r, pct: pctOf(r)}; });
+  const w = 0.35, edgeOf = x => (w*x.model + (1-w)*x.market) - x.market;   // how far the default blend sits from the line, in points
+  const buckets = [[0,1],[1,2],[2,3],[3,5],[5,99]].map(([lo,hi]) => { const list = rows.filter(x => Math.abs(edgeOf(x)) >= lo && Math.abs(edgeOf(x)) < hi);
+    const r = rec(list, x => edgeOf(x) > 0); return {lo, hi, n: list.length, ...r, pct: pctOf(r)}; });
+  const stats = x => x.model - x.market;   // the raw stats view vs the market (100% stats)
+  const rawBuckets = [[0,3],[3,6],[6,10],[10,99]].map(([lo,hi]) => { const list = rows.filter(x => Math.abs(stats(x)) >= lo && Math.abs(stats(x)) < hi);
+    const r = rec(list, x => stats(x) > 0); return {lo, hi, n: list.length, ...r, pct: pctOf(r)}; });
+  const tot = rows.filter(x => x.ou != null && x.totModel != null);
+  const totBuckets = [[0,2],[2,4],[4,7],[7,99]].map(([lo,hi]) => { const list = tot.filter(x => Math.abs(x.totModel - x.ou) >= lo && Math.abs(x.totModel - x.ou) < hi);
+    const r = {W:0,L:0,P:0}; for(const x of list){ const d = x.totActual - x.ou; if(d === 0){ r.P++; continue; } ((d > 0) === (x.totModel > x.ou)) ? r.W++ : r.L++; } return {lo, hi, n: list.length, ...r, pct: pctOf(r)}; });
+  const splits = {
+    favsCovered: rec(rows.filter(x => x.fav !== "pick"), x => x.fav === "home"), homeCovered: rec(rows, x => true),
+    bigFavsCovered: rec(rows.filter(x => x.big), x => x.fav === "home"), divFavsCovered: NFL ? rec(rows.filter(x => x.div), x => x.fav === "home") : null,
+    overs: (() => { const r = {W:0,L:0,P:0}; for(const x of tot){ const d = x.totActual - x.ou; if(d===0) r.P++; else d > 0 ? r.W++ : r.L++; } return r; })() };
+  return {n: rows.length, sweep, buckets, rawBuckets, totBuckets, splits, weeks: new Set(rows.map(x => x.wk)).size};
+}
+async function runLab(){
+  if(labBusy){ labAbort = true; return; }
+  labBusy = true; labAbort = false; renderLab("Starting…");
+  const data = {};
+  try{
+    for(const y of LAB_YEARS){
+      let games = labLoad(y);
+      if(!games){ games = await labFetchSeason(y, msg => renderLab(msg)); if(!labSave(y, games)) renderLab(`${y}: too big to keep on this device — kept in memory for this run`); }
+      data[y] = games;
+    }
+    renderLab("Evaluating…"); await new Promise(r => setTimeout(r, 30));
+    const out = {ran: Date.now(), years: {}, all: {}};
+    for(const prior of ["market","average"]){ let allRows = [];
+      for(const y of LAB_YEARS){ const rows = labEvaluate(data[y], prior, `lab${y}`); allRows = allRows.concat(rows); (out.years[y] ||= {})[prior] = labSummarize(rows); }
+      out.all[prior] = labSummarize(allRows); }
+    out.games = Object.fromEntries(LAB_YEARS.map(y => [y, data[y].length]));
+    labResults = out; store.local("lab", out);
+  }catch(err){ renderLab(err.message === "stopped" ? "Stopped." : `Couldn't finish: ${err.message}`); labBusy = false; return; }
+  labBusy = false; renderLab();
+}
+function renderLab(status){
+  const box = document.getElementById("lab"); if(!box) return;
+  if(status != null) labStatus = status; if(labBusy && status == null) status = labStatus;
+  const pc = v => v == null ? "—" : (v*100).toFixed(1) + "%";
+  const cls = v => v == null ? "" : v >= .524 ? "pos" : v <= .48 ? "neg" : "";
+  const recTxt = r => `${r.W}–${r.L}${r.P?"–"+r.P:""}`;
+  const btn = `<div class="btns"><button class="${labBusy?"":"primary"}" id="labRun">${labBusy ? "Stop" : labResults ? "Re-run the Lab" : `Run the Lab (${LAB_YEARS[0]}–${LAB_YEARS[LAB_YEARS.length-1]})`}</button>${status?`<span class="note" style="margin:0">${status}</span>`:""}</div>`;
+  if(!labResults){ box.innerHTML = `<h2>The Lab</h2><p>Runs this exact model over the ${LAB_YEARS.join(", ")} seasons — every ${LG.tag} game with a closing line, predicted week by week from only the weeks before it — and reports what would have actually covered. The first run pulls a few thousand box scores from ESPN (a few minutes; they're kept on this device after that).</p>${btn}`;
+    box.querySelector("#labRun").addEventListener("click", runLab); return; }
+  const R = labResults, m = R.all.market, a = R.all.average;
+  const bestM = m.sweep.slice().sort((x,y) => x.rmse - y.rmse)[0], mkt = m.sweep.find(s => s.w === 0);
+  const bestAts = m.sweep.slice().filter(s => s.w > 0).sort((x,y) => (y.pct ?? 0) - (x.pct ?? 0))[0];
+  const goodBucket = m.buckets.filter(b => b.n >= 60 && b.pct != null && b.pct >= .524);
+  const goodTot = m.totBuckets.filter(b => b.n >= 60 && b.pct != null && b.pct >= .524);
+  const verdict = [];
+  verdict.push(bestM.w === 0 ? `On margin error, <b>the market line alone beats every blend</b> (${mkt.rmse.toFixed(2)} pts vs ${m.sweep.find(s=>s.w===.35).rmse.toFixed(2)} at 35% stats).` : `Blending in <b>${Math.round(bestM.w*100)}% stats</b> predicted margins slightly better than the line alone (${bestM.rmse.toFixed(2)} vs ${mkt.rmse.toFixed(2)} pts).`);
+  verdict.push(bestAts && bestAts.pct >= .524 ? `Against the spread, <b>${Math.round(bestAts.w*100)}% stats went ${recTxt(bestAts)} (${pc(bestAts.pct)})</b> over ${m.n} games — above break-even.` : `Against the spread, <b>no weight cleared 52.4%</b> over ${m.n} games (best: ${bestAts ? `${Math.round(bestAts.w*100)}% stats at ${pc(bestAts.pct)}` : "—"}). The sides picks, as built, have no edge.`);
+  verdict.push(goodBucket.length ? `Picks only paid when the model disagreed with the line by <b>${goodBucket[0].lo}+ points</b> (${goodBucket.map(b => `${b.lo}–${b.hi===99?"":b.hi}: ${pc(b.pct)} on ${b.n}`).join("; ")}).` : `No disagreement size between model and line covered at a profitable rate — bigger edges were not better edges.`);
+  verdict.push(goodTot.length ? `Totals: the projection beat the number when it disagreed by <b>${goodTot[0].lo}+ points</b> (${goodTot.map(b => `${pc(b.pct)} on ${b.n}`).join("; ")}).` : `Totals: no disagreement size cleared break-even either.`);
+  const sp = m.splits; const spTxt = `Favorites covered ${pc(sp.favsCovered.W/(sp.favsCovered.W+sp.favsCovered.L))} (${recTxt(sp.favsCovered)}), home teams ${pc(sp.homeCovered.W/(sp.homeCovered.W+sp.homeCovered.L))}, favorites of 10+ ${pc(sp.bigFavsCovered.W/(sp.bigFavsCovered.W+sp.bigFavsCovered.L))}${sp.divFavsCovered?`, divisional favorites ${pc(sp.divFavsCovered.W/(sp.divFavsCovered.W+sp.divFavsCovered.L))}`:""}; overs hit ${pc(sp.overs.W/(sp.overs.W+sp.overs.L))}.`;
+  const sweepRow = (s, s2) => `<tr><td>${Math.round(s.w*100)}% stats</td><td>${s.rmse.toFixed(2)}</td><td class="${cls(s.pct)}">${recTxt(s)} · ${pc(s.pct)}</td><td>${s2 ? s2.rmse.toFixed(2) : "—"}</td><td class="${cls(s2?.pct)}">${s2 ? `${recTxt(s2)} · ${pc(s2.pct)}` : "—"}</td></tr>`;
+  const bRow = b => `<tr><td>${b.lo}–${b.hi===99?"+":b.hi} pts</td><td>${b.n}</td><td class="${cls(b.pct)}">${recTxt(b)} · ${pc(b.pct)}</td></tr>`;
+  box.innerHTML = `<h2>The Lab</h2>
+    <p>This model, run walk-forward over <b>${Object.values(R.games).reduce((a,b)=>a+b,0)} ${LG.tag} games</b> from ${LAB_YEARS.join(", ")} (${Object.entries(R.games).map(([y,n])=>`${y}: ${n}`).join(" · ")}), each week predicted from only the weeks before it, with the same shrinkage and no injuries or rest. Ran ${new Date(R.ran).toLocaleDateString("en-US",{month:"short",day:"numeric"})}.</p>
+    <p><b>What it found.</b> ${verdict.join(" ")}</p>
+    <p class="note">${spTxt}</p>
+    <h3 style="margin:14px 0 4px;font-size:16px">Stats weight, market prior vs average prior</h3>
+    <div class="tablewrap"><table><tr><th>Weight</th><th>Miss (market prior)</th><th>ATS</th><th>Miss (average prior)</th><th>ATS</th></tr>${m.sweep.map(s => sweepRow(s, a.sweep.find(x => x.w === s.w))).join("")}</table></div>
+    <h3 style="margin:14px 0 4px;font-size:16px">Does a bigger disagreement mean a better pick? (35% blend, market prior)</h3>
+    <div class="tablewrap"><table><tr><th>Blend vs line</th><th>Games</th><th>Covered</th></tr>${m.buckets.map(bRow).join("")}</table></div>
+    <div class="tablewrap"><table><tr><th>Stats-only vs line</th><th>Games</th><th>Covered</th></tr>${m.rawBuckets.map(bRow).join("")}</table></div>
+    <h3 style="margin:14px 0 4px;font-size:16px">Totals: projection vs the number</h3>
+    <div class="tablewrap"><table><tr><th>Projection vs O/U</th><th>Games</th><th>Hit</th></tr>${m.totBuckets.map(bRow).join("")}</table></div>
+    <h3 style="margin:14px 0 4px;font-size:16px">By season (35% blend, market prior)</h3>
+    <div class="tablewrap"><table><tr><th>Season</th><th>Games</th><th>Miss</th><th>ATS</th><th>Market-only miss</th></tr>${LAB_YEARS.map(y => { const s = R.years[y]?.market; if(!s) return ""; const b = s.sweep.find(x => x.w === .35), z = s.sweep.find(x => x.w === 0); return `<tr><td>${y}</td><td>${s.n}</td><td>${b.rmse.toFixed(2)}</td><td class="${cls(b.pct)}">${recTxt(b)} · ${pc(b.pct)}</td><td>${z.rmse.toFixed(2)}</td></tr>`; }).join("")}</table></div>
+    <p class="note">Miss = root-mean-square error of the predicted margin, in points (the line itself is usually ~13–14). Any stats weight above zero picks the same side — the weight only changes how confident the pick looks — so the ATS record repeats down the column and the buckets below are the real test. 52.4% is break-even at -110; a bucket needs a few hundred games before a percentage means much. Green = above break-even, red = clearly below.</p>
+    ${btn}`;
+  box.querySelector("#labRun").addEventListener("click", runLab);
+}
+
 /* branding + switch */
 (function brand(){
   document.querySelectorAll(".appName,.sbName").forEach(el => el.textContent = LG.name);
