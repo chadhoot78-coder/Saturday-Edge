@@ -123,6 +123,8 @@
   .move.with{color:var(--turf-deep);background:var(--with-bg)} .move.against{color:var(--flag);background:var(--against-bg)}
   .lean{margin-top:8px;font-size:14px;font-weight:600;color:var(--flag)}
   .lean.none{color:var(--ink-2);font-weight:400}
+  .lean-note{font-weight:500;color:var(--ink-2)} .lean.angles{font-weight:400;color:var(--ink-2);font-size:13px;margin-top:5px}
+  .angle{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-radius:10px;margin:2px 2px 0 0;color:var(--ink-2);background:var(--chalk)} .angle.ok{border-color:var(--turf);color:var(--turf-deep);font-weight:600;background:var(--with-bg)}
 
   .detail{display:none;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px}
   .game.open .detail{display:block}
@@ -244,7 +246,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.4</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.5</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -263,7 +265,7 @@
     <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
     <p><b>Model line.</b> Home rating − away rating + 2.5 pts home field (0 at a neutral site).</p>
     <p><b>Blend.</b> The slider mixes the model line with the market line. Default is 35% stats / 65% market, because the line already prices injuries, weather, and matchups. Nudge it toward stats as the season goes on.</p>
-    <p><b>Probability.</b> Expected margin ÷ 16 (the historical std. dev. of FBS margins, wider than the NFL's 13.5) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with a little extra weight on 3 and 7 — key numbers matter in college, but less than in the pros. College football has no ties, so a 0 margin is impossible. A pick is a play only when the cover chance is ≥54.5% (break-even is 52.4%); otherwise it's a pass. Once a game is final the pick grades W/L and the record at the top updates.</p>
+    <p><b>Probability.</b> Expected margin ÷ 16 (the historical std. dev. of FBS margins, wider than the NFL's 13.5) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with a little extra weight on 3 and 7 — key numbers matter in college, but less than in the pros. College football has no ties, so a 0 margin is impossible. A pick is marked a <b>play</b> only when the Lab (below) shows that size of disagreement with the line has covered 53%+ over 100+ games in 2023–25; otherwise it's a lean, shown with its Lab rate. Once a game is final the pick grades W/L and the record at the top updates.</p>
     <p><b>Coverage.</b> Regular season, FBS games only (Weeks 1–16 on ESPN's calendar, including conference championships). Bowls and the playoff aren't loaded.</p>
   </section>
   <section class="method" data-lg="nfl">
@@ -280,7 +282,7 @@
     <p><b>Line tracking.</b> The first spread the app sees for a game is saved as the opener. ▲ means the line has moved toward the pick (the market agrees), ▼ means it's moved away. Graded picks are saved so the record carries week to week.</p>
     <p><b>Model line.</b> Home rating − away rating + 1.5 pts home field (0 at a neutral site).</p>
     <p><b>Blend.</b> The slider mixes the model line with the market line. Default is 35% stats / 65% market, because the line already prices injuries, weather, and matchups. Nudge it toward stats as the season goes on.</p>
-    <p><b>Probability.</b> Expected margin ÷ 13.5 (the historical std. dev. of NFL margins) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with extra weight on the key numbers 3 and 7, so crossing 3 is worth more than crossing 5. A pick is a play only when the cover chance is ≥54.5% (break-even is 52.4%); otherwise it's a pass. Once a game is final the pick grades W/L and the record at the top updates.</p>
+    <p><b>Probability.</b> Expected margin ÷ 13.5 (the historical std. dev. of NFL margins) through a normal curve. <b>ATS pick.</b> Every game gets a side: whichever team the blended margin favors against the number, with the chance it covers and the dollar EV at -110. Margins are modeled on a discrete curve with extra weight on the key numbers 3 and 7, so crossing 3 is worth more than crossing 5. A pick is marked a <b>play</b> only when the Lab (below) shows that size of disagreement with the line has covered 53%+ over 100+ games in 2023–25; otherwise it's a lean, shown with its Lab rate. Once a game is final the pick grades W/L and the record at the top updates.</p>
     <p><b>Coverage.</b> Regular season, Weeks 1–18. The playoffs aren't loaded.</p>
   </section>
 </div>
@@ -625,7 +627,8 @@ const wxChip = g => { const w = g.wx; if(!w || g.final || g.state==="in") return
 function evalTotal(g, w){
   if(g.ou == null || isFCSGame(g)) return null;      // no total play against an FCS prior either
   const wx = wxAdj(g), model = projectTotal(g) - wx.pts, blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
-  return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under", wx};
+  const gate = gateTotal(model - g.ou);
+  return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under", wx, gate, play: gate.ok};
 }
 const gamesPlayed = (t, games = week1) => games.filter(g => g.final && (g.home===t || g.away===t)).length;
 const lastGameTs = (t, before = Infinity) => { const gs = week1.filter(x => x.final && (x.home===t || x.away===t) && x.ts && x.ts < before); return gs.length ? Math.max(...gs.map(x=>x.ts)) : null; };
@@ -642,6 +645,31 @@ function injAdj(t){                                  // penalty in points for li
     pts += w; if(out || i.pos==="QB") notes.push(`${i.name} (${i.pos}) ${i.status}`); }
   return {pts: Math.min(6, pts), notes};
 }
+/* ---------- the evidence gate: a pick is a PLAY only where the Lab says that kind of pick has actually paid ----------
+   Sides are gated by how far the stats line sits from the market line (the raw disagreement, independent of the slider); totals by
+   how far the projection sits from the number; angles by their own historical record. A bucket qualifies when it has 100+ games
+   and covered 53%+ (break-even is 52.4%). LAB_DEFAULTS are the Sep 22 2026 runs; a Lab run on this device replaces them. */
+const GATE_MIN_N = 100, GATE_MIN_PCT = 0.53;
+const LAB_DEFAULTS = {
+  nfl: { rawBuckets:[{lo:0,hi:3,n:185,W:93,L:92,P:0,pct:.503},{lo:3,hi:6,n:166,W:89,L:77,P:0,pct:.536},{lo:6,hi:10,n:110,W:61,L:49,P:0,pct:.555},{lo:10,hi:99,n:68,W:29,L:39,P:0,pct:.426}],
+         totBuckets:[{lo:0,hi:2,n:242,W:124,L:118,P:0,pct:.512},{lo:2,hi:4,n:154,W:80,L:74,P:0,pct:.519},{lo:4,hi:7,n:87,W:47,L:40,P:0,pct:.540},{lo:7,hi:99,n:20,W:12,L:8,P:0,pct:.600}], angles:[] },
+  cfb: { rawBuckets:[{lo:0,hi:3,n:636,W:320,L:309,P:7,pct:.509},{lo:3,hi:6,n:560,W:274,L:282,P:4,pct:.493},{lo:6,hi:10,n:458,W:213,L:239,P:6,pct:.471},{lo:10,hi:99,n:274,W:145,L:129,P:0,pct:.529}],
+         totBuckets:[{lo:0,hi:2,n:386,W:201,L:184,P:1,pct:.522},{lo:2,hi:4,n:352,W:177,L:174,P:1,pct:.504},{lo:4,hi:7,n:470,W:245,L:224,P:1,pct:.522},{lo:7,hi:99,n:668,W:363,L:301,P:4,pct:.547}], angles:[] } };
+const ANGLES = [                                     // situational angles the Lab scores on the same seasons; x is a lab/live row (see rowFor)
+  {id:"bigFav", label:"Favorite of 10+", type:"side", applies:x => x.spread != null && Math.abs(x.spread) >= 10, pickHome:x => x.spread < 0},
+  {id:"divDog", label:"Divisional underdog", type:"side", nfl:true, applies:x => x.div && x.spread != null && x.spread !== 0, pickHome:x => x.spread > 0},
+  {id:"homeDog", label:"Home underdog", type:"side", applies:x => x.spread != null && x.spread > 0, pickHome:x => true},
+  {id:"earlyOver", label:"Early-season over, projection 7+ high", type:"total", applies:x => x.wk <= 4 && x.ou != null && x.totModel != null && x.totModel - x.ou >= 7, over:x => true},
+  {id:"lateOver", label:"Projection 7+ high, week 5 on", type:"total", applies:x => x.wk >= 5 && x.ou != null && x.totModel != null && x.totModel - x.ou >= 7, over:x => true},
+  {id:"bigUnder", label:"Projection 7+ low", type:"total", applies:x => x.ou != null && x.totModel != null && x.ou - x.totModel >= 7, over:x => false},
+];
+const rowFor = (g, e, t) => ({g, wk:g.week, spread:e.spread, div: NFL && isDivGame(g), totModel: t ? t.model : null, ou: g.ou});
+const labSummary = () => (typeof labResults !== "undefined" && labResults?.all?.market) || LAB_DEFAULTS[LG.id] || null;
+const gateOk = b => !!b && b.n >= GATE_MIN_N && b.pct != null && b.pct >= GATE_MIN_PCT;
+function gateSide(rawEdge){ const S = labSummary(); if(!S || rawEdge == null) return {ok:false}; const b = S.rawBuckets.find(b => Math.abs(rawEdge) >= b.lo && Math.abs(rawEdge) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
+function gateTotal(diff){ const S = labSummary(); if(!S || diff == null) return {ok:false}; const b = S.totBuckets.find(b => Math.abs(diff) >= b.lo && Math.abs(diff) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
+function anglesFor(row){ const S = labSummary(); return ANGLES.filter(a => (!a.nfl || NFL) && a.applies(row)).map(a => { const st = S?.angles?.find(x => x.id === a.id); return {...a, side: a.type === "side" ? (a.pickHome(row) ? row.g.home : row.g.away) : (a.over(row) ? "Over" : "Under"), n: st?.n ?? 0, pct: st?.pct ?? null, ok: gateOk(st)}; }); }
+const labPct = (n, pct) => pct == null ? "no Lab data" : `${Math.round(pct*100)}% on ${n}`;
 function evaluate(g, w){
   const R = ratingsFor(g.week);                                        // a past week is scored with only what the model knew then
   const rh = R[g.home] ?? 0, ra = R[g.away] ?? 0, fcs = isFCSGame(g);
@@ -662,7 +690,8 @@ function evaluate(g, w){
   const pCoverHome = spread == null ? null : coverP(blend, spread);
   const pCover = pickHome == null ? null : (pickHome ? pCoverHome : 1 - pCoverHome);   // chance the pick covers
   const evPer100 = pCover == null ? null : pCover*100*100/110 - (1-pCover)*100;        // $ EV per $100 at -110
-  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, fcs, locked: !!lk, hasRating: g.home in R && g.away in R};
+  const gate = (fcs || market == null) ? {ok:false} : gateSide(modelLine - market);
+  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, fcs, locked: !!lk, hasRating: g.home in R && g.away in R, gate, play: gate.ok};
 }
 
 /* ---------- render ---------- */
@@ -868,10 +897,11 @@ function render(){
   }
   let lastDay = null;
   const all = slateFor(VW);
-  const isPlay = g => { const e = evaluate(g,w), t = evalTotal(g,w); return (e.pCover ?? 0) >= PLAY_MIN || (t ? Math.max(t.pOver, 1-t.pOver) : 0) >= PLAY_MIN; };
+  const playsOf = g => { const e = evaluate(g,w), t = evalTotal(g,w); const an = anglesFor(rowFor(g, e, t)).filter(a => a.ok);
+    const list = []; if(e.play) list.push(e.gate.pct); if(t?.play) list.push(t.gate.pct); an.forEach(a => list.push(a.pct)); return list; };
+  const isPlay = g => playsOf(g).length > 0;
   let slate = bestMode
-    ? all.map(g => { const e = evaluate(g,w), t = evalTotal(g,w); const best = Math.max(e.pCover ?? 0, t ? Math.max(t.pOver, 1-t.pOver) : 0); return {g, best}; })
-        .filter(x => x.best >= PLAY_MIN && !x.g.final).sort((a,b) => b.best - a.best).map(x => x.g)
+    ? all.map(g => ({g, best: Math.max(0, ...playsOf(g))})).filter(x => x.best > 0 && !x.g.final).sort((a,b) => b.best - a.best).map(x => x.g)
     : all;
   slate = slate.filter(inFilter);
   if(viewOpts.plays && !bestMode) slate = slate.filter(isPlay);
@@ -894,22 +924,27 @@ function render(){
     } else if(e.market != null){
       const side = e.pickHome ? g.home : g.away;
       const num  = e.pickHome ? e.spread : -e.spread;
-      const strong = e.pCover >= PLAY_MIN;
+      const strong = e.play;
       let grade = e.ats ? ` <span class="grade ${e.ats}">${e.ats==="P"?"PUSH":e.ats==="W"?"WIN":"LOSS"} · ${g.away} ${g.as}–${g.hs} ${g.home}</span>${e.locked?` <span style="opacity:.6">locked pre-kickoff</span>`:""}` : "";
       if(!e.ats && g.state==="in"){ const cover = (g.hs - g.as) + e.spread; const ok = cover===0 ? null : (cover>0)===e.pickHome;
         grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
       const canLog = !g.final && g.state!=="in" && !past;
-      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${strong?"":" (pass)"}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
+      const gateTxt = strong ? ` <span class="grade W" title="Lab: picks this far off the line covered ${labPct(e.gate.n, e.gate.pct)}">PLAY · Lab ${Math.round(e.gate.pct*100)}%</span>` : ` <span class="lean-note" title="${e.gate.n ? `Lab: picks ${e.gate.lo}–${e.gate.hi===99?"":e.gate.hi} pts off the line covered ${labPct(e.gate.n, e.gate.pct)} — not enough to bet` : "no Lab record for this size of disagreement"}">(lean${e.gate.n ? ` · Lab ${Math.round(e.gate.pct*100)}%` : ""})</span>`;
+      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${gateTxt}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
     }
     const t = evalTotal(g, w);
-    if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = pP >= PLAY_MIN;
+    if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = t.play;
       let tg = "";
       if(g.final){ const d = (g.hs+g.as) - g.ou; const ok = d===0 ? null : (d>0) === (t.pick==="Over"); tg = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"PUSH":ok?"WIN":"LOSS"}</span>`; }
       else if(g.state==="in"){ tg = ` <span class="grade">${g.hs+g.as} so far</span>`; }
       const canLogT = !g.final && g.state!=="in" && !past;
-      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${t.wx.pts?` <span class="wx bad" title="${t.wx.text}">(wx −${t.wx.pts.toFixed(1)})</span>`:""}${tStrong?"":" (pass)"}${tStrong&&!past?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
+      const tGate = tStrong ? ` <span class="grade W" title="Lab: projections this far off the number hit ${labPct(t.gate.n, t.gate.pct)}">PLAY · Lab ${Math.round(t.gate.pct*100)}%</span>` : ` <span class="lean-note" title="${t.gate.n ? `Lab: projections ${t.gate.lo}–${t.gate.hi===99?"":t.gate.hi} pts off the number hit ${labPct(t.gate.n, t.gate.pct)}` : "no Lab record"}">(lean${t.gate.n ? ` · Lab ${Math.round(t.gate.pct*100)}%` : ""})</span>`;
+      lean += `<div class="lean ${tStrong?"":"none"}">Total: ${t.pick} ${g.ou} · ${pct(pP)} · model ${t.blend.toFixed(1)}${t.wx.pts?` <span class="wx bad" title="${t.wx.text}">(wx −${t.wx.pts.toFixed(1)})</span>`:""}${tGate}${tStrong&&!past?kellyText(pP,-110):""}${tg}${canLogT?` <button class="mini" data-log="total" data-side="${t.pick}" data-line="${g.ou}" data-p="${pP}">Log</button>`:""}</div>`; }
+    const angles = (!g.final && e.market != null && !e.fcs) ? anglesFor(rowFor(g, e, t)) : [];
+    if(angles.length) lean += `<div class="lean angles">${angles.map(a => `<span class="angle ${a.ok?"ok":""}" title="${a.label}: this side has covered ${labPct(a.n, a.pct)} in the Lab${a.ok?" — a play":""}">${a.ok?"PLAY · ":""}${a.label} → ${a.side}${a.pct!=null?` · ${Math.round(a.pct*100)}%`:""}</span>`).join(" ")}</div>`;
+    const anyPlay = e.play || !!t?.play || angles.some(a => a.ok);
     const card = document.createElement("div");
-    card.className = "game" + (e.pCover >= PLAY_MIN && !e.ats ? " flag":"") + (open.has(key)?" open":"");
+    card.className = "game" + (anyPlay && !e.ats && !g.final ? " flag":"") + (open.has(key)?" open":"");
     card.dataset.key = key; card.tabIndex = 0;
     const inPlay = g.state==="in";
     const scoreLine = (inPlay || g.final) ? `<div class="score ${inPlay?"live":""}">
@@ -1023,7 +1058,7 @@ function renderSeason(){
   if(!games.length){ box.innerHTML = `<h2>Season so far</h2><p>Records by week and by situation appear once games have gone final.</p>`; return; }
   const rows = games.map(g => { const e = evaluate(g, w); const t = evalTotal(g, w); let tr = null;
     if(t){ const d = (g.hs+g.as) - g.ou; tr = d===0 ? "P" : (d>0)===(t.pick==="Over") ? "W" : "L"; }
-    return {g, e, t, tr, play: (e.pCover ?? 0) >= PLAY_MIN, tPlay: t ? Math.max(t.pOver, 1-t.pOver) >= PLAY_MIN : false}; }).filter(r => r.e.ats && r.e.hasRating && r.g.week > 1);   // like the backtest: only games the model had results to work from
+    return {g, e, t, tr, play: e.play, tPlay: !!t?.play}; }).filter(r => r.e.ats && r.e.hasRating && r.g.week > 1);   // like the backtest: only games the model had results to work from
   const tally = list => { const r = {W:0,L:0,P:0}; for(const x of list) r[x]++; return r; };
   const rec = r => `${r.W}–${r.L}${r.P?"–"+r.P:""}`;
   const pctW = r => r.W+r.L ? Math.round(100*r.W/(r.W+r.L)) : null;
@@ -1274,7 +1309,7 @@ function lineAlerts(){
       const e = evaluate(g, +document.getElementById("w").value/100), toward = g.spread < was ? g.home : g.away;
       const withYou = e.pickHome != null && ((g.spread < was) === e.pickHome);
       items.push(`<b>${g.away} @ ${g.home}</b>: ${spreadText(g,was)} → ${spreadText(g,g.spread)}${crosses(was,g.spread)?" <b>(crossed a key number)</b>":""} — money on ${toward}${e.pickHome!=null?`, ${withYou?"with":"against"} your pick`:""}`);
-      const mine = bets.some(b => b.key === k && !b.result) || (e.pCover ?? 0) >= PLAY_MIN;          // only games you care about get a notification
+      const mine = bets.some(b => b.key === k && !b.result) || e.play;          // only games you care about get a notification
       const stamp = `${k}|${g.spread}`; if(mine && !alerted[stamp]){ alerted[stamp] = 1; pings.push({title:`${g.away} @ ${g.home}: ${spreadText(g,g.spread)}`, body:`was ${spreadText(g,was)} · money on ${toward}${e.pickHome!=null?` · ${withYou?"with":"against"} your pick`:""}${crosses(was,g.spread)?" · crossed a key number":""}`}); }
     }
     if(g.spread != null) lastSeen[k] = g.spread; }
@@ -1401,7 +1436,7 @@ function labEvaluate(games, prior, tag, epaShare = 0){
       if(!(g.home in r) || !(g.away in r)) continue;
       const model = r[g.home] - r[g.away] + (g.neutral ? 0 : HFA), market = -g.spread, actual = g.hs - g.as;
       const totModel = g.ou != null ? projectTotal(g, hist) : null;
-      rows.push({wk, g, model, market, actual, cover: actual + g.spread, totModel, totActual: g.hs + g.as, ou: g.ou, fav: g.spread < 0 ? "home" : g.spread > 0 ? "away" : "pick", big: Math.abs(g.spread) >= 10, div: NFL && isDivGame(g)});
+      rows.push({wk, g, spread: g.spread, model, market, actual, cover: actual + g.spread, totModel, totActual: g.hs + g.as, ou: g.ou, fav: g.spread < 0 ? "home" : g.spread > 0 ? "away" : "pick", big: Math.abs(g.spread) >= 10, div: NFL && isDivGame(g)});
     }
   }
   return rows;
@@ -1425,7 +1460,11 @@ function labSummarize(rows){
     favsCovered: rec(rows.filter(x => x.fav !== "pick"), x => x.fav === "home"), homeCovered: rec(rows, x => true),
     bigFavsCovered: rec(rows.filter(x => x.big), x => x.fav === "home"), divFavsCovered: NFL ? rec(rows.filter(x => x.div), x => x.fav === "home") : null,
     overs: (() => { const r = {W:0,L:0,P:0}; for(const x of tot){ const d = x.totActual - x.ou; if(d===0) r.P++; else d > 0 ? r.W++ : r.L++; } return r; })() };
-  return {n: rows.length, sweep, buckets, rawBuckets, totBuckets, splits, weeks: new Set(rows.map(x => x.wk)).size};
+  const angles = ANGLES.filter(a => !a.nfl || NFL).map(a => { const list = rows.filter(x => a.applies(x)); let r;
+    if(a.type === "side") r = rec(list, x => a.pickHome(x));
+    else { r = {W:0,L:0,P:0}; for(const x of list){ const d = x.totActual - x.ou; if(d === 0){ r.P++; continue; } ((d > 0) === a.over(x)) ? r.W++ : r.L++; } }
+    return {id:a.id, label:a.label, type:a.type, n:list.length, ...r, pct: pctOf(r)}; });
+  return {n: rows.length, sweep, buckets, rawBuckets, totBuckets, splits, angles, weeks: new Set(rows.map(x => x.wk)).size};
 }
 async function runLab(){
   if(labBusy){ labAbort = true; return; }
@@ -1475,12 +1514,15 @@ function renderLab(status){
   box.innerHTML = `<h2>The Lab</h2>
     <p>This model, run walk-forward over <b>${Object.values(R.games).reduce((a,b)=>a+b,0)} ${LG.tag} games</b> from ${LAB_YEARS.join(", ")} (${Object.entries(R.games).map(([y,n])=>`${y}: ${n}`).join(" · ")}), each week predicted from only the weeks before it, with the same shrinkage and no injuries or rest. Ran ${new Date(R.ran).toLocaleDateString("en-US",{month:"short",day:"numeric"})}.</p>
     <p><b>What it found.</b> ${verdict.join(" ")}</p>
+    <p><b>How this feeds the picks.</b> A side, total or angle is marked <b>PLAY</b> on the board only when its row here has ${GATE_MIN_N}+ games and covered ${Math.round(GATE_MIN_PCT*100)}%+; everything else is shown as a lean with its Lab rate. ${labResults ? "This device's own Lab run is in charge." : "Until you run the Lab here, the built-in Sep 2026 run is used."}</p>
     <p class="note">${spTxt}</p>
     <h3 style="margin:14px 0 4px;font-size:16px">Stats weight, market prior vs average prior</h3>
     <div class="tablewrap"><table><tr><th>Weight</th><th>Miss (market prior)</th><th>ATS</th><th>Miss (average prior)</th><th>ATS</th></tr>${m.sweep.map(s => sweepRow(s, a.sweep.find(x => x.w === s.w))).join("")}</table></div>
     <h3 style="margin:14px 0 4px;font-size:16px">Does a bigger disagreement mean a better pick? (35% blend, market prior)</h3>
     <div class="tablewrap"><table><tr><th>Blend vs line</th><th>Games</th><th>Covered</th></tr>${m.buckets.map(bRow).join("")}</table></div>
     <div class="tablewrap"><table><tr><th>Stats-only vs line</th><th>Games</th><th>Covered</th></tr>${m.rawBuckets.map(bRow).join("")}</table></div>
+    <h3 style="margin:14px 0 4px;font-size:16px">Situational angles</h3>
+    <div class="tablewrap"><table><tr><th>Angle</th><th>Games</th><th>Covered / hit</th><th>Play?</th></tr>${(m.angles||[]).map(a => `<tr><td>${a.label}</td><td>${a.n}</td><td class="${cls(a.pct)}">${recTxt(a)} · ${pc(a.pct)}</td><td>${gateOk(a) ? "<b class=pos>yes</b>" : a.n < GATE_MIN_N ? "too few games" : "no"}</td></tr>`).join("")}</table></div>
     <h3 style="margin:14px 0 4px;font-size:16px">Totals: projection vs the number</h3>
     <div class="tablewrap"><table><tr><th>Projection vs O/U</th><th>Games</th><th>Hit</th></tr>${m.totBuckets.map(bRow).join("")}</table></div>
     ${R.epa ? `<h3 style="margin:14px 0 4px;font-size:16px">Inputs: how much EPA to use (${R.epaYears.join(", ")}, games with EPA for both teams, market prior)</h3>
@@ -1526,7 +1568,7 @@ async function sharePicks(recap = false){
   const rows = slateFor(viewWeek()).filter(inFilter).map(g => ({g, e:evaluate(g,w)})).filter(x => x.e.market!=null && x.e.pickHome!=null).sort((a,b) => Math.abs(b.e.edge) - Math.abs(a.e.edge));
   const line = ({g,e}) => { const side = e.pickHome ? g.home : g.away, num = e.pickHome ? e.spread : -e.spread;
     return { pick:`${side} ${num>0?"+":""}${num.toFixed(1)}`, game:`${g.away} @ ${g.home}`, edge:Math.abs(e.edge).toFixed(1),
-      prob: pct(e.pickHome ? e.pHome : 1-e.pHome), strong: e.pCover >= PLAY_MIN, cover: pct(e.pCover),
+      prob: pct(e.pickHome ? e.pHome : 1-e.pHome), strong: e.play, cover: pct(e.pCover),
       res: e.ats ? (e.ats==="W"?"✓":e.ats==="L"?"✗":"push") : g.state==="in" ? "live" : "",
       tot: (() => { const t = evalTotal(g,w); return t ? `${t.pick.toLowerCase()[0]}${g.ou}` : ""; })() }; };
   let L = rows.map(line);
@@ -1551,7 +1593,7 @@ async function sharePicks(recap = false){
     c.fillStyle = "#5B6778"; c.font = "500 28px Barlow, sans-serif"; c.fillText(x.game, 400, y); c.fillText(x.prob, 640, y); c.fillText(x.tot, 900, y);
     c.fillStyle = x.strong ? "#D9532B" : "#5B6778"; c.font = "700 32px 'Barlow Condensed', Impact, sans-serif"; c.fillText(x.cover, 780, y);
     if(x.res){ c.fillStyle = x.res==="✓" ? "#2E7D4F" : x.res==="✗" ? "#D9532B" : "#5B6778"; c.font = "700 30px Barlow, sans-serif"; c.fillText(x.res, 1000, y); } });
-  c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = cover chance ≥ ${Math.round(PLAY_MIN*100)}%. Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
+  c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = a play the Lab backs (that size of edge has covered 53%+ over 2023–25). Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
   const file = new File([blob], `${LG.file}-week${VW}${recap?"-recap":""}.png`, {type:"image/png"});
   try{
