@@ -225,6 +225,7 @@
       <button id="recap">Recap</button>
       <button id="notify" title="Get a notification when a line moves on a play or a logged bet">Alerts: Off</button>
       <button id="prior" title="What a team is assumed to be before its results say otherwise: the market's rating, or league average (the original model)">Prior: Market</button>
+      <button id="inputs" title="Which per-game inputs feed the ratings">Inputs: Margin</button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
     <div class="chips viewchips" id="viewchips" role="group" aria-label="View options"></div>
@@ -243,7 +244,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.3</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.4</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -390,7 +391,7 @@ let names = store.get("names", {}), rank = {}, fbs = new Set(store.get("fbs", []
 let viewOpts = store.get("view", {plays:false, hideFinals:false}), future = {}, geo = store.get("geo", {}), notifyOn = store.get("notify", false), alerted = store.get("alerted", {});
 const ratingCache = {};                              // week -> ratings built from only the weeks before it (for viewing past weeks honestly)
 const ratingsFor = wk => { if(wk == null || wk >= CUR) return ratings;
-  const key = `${PRIOR}|${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
+  const key = `${PRIOR}|${EPA_ON && EPA ? "e" : "m"}|${wk}|${week1.filter(x=>x.final).length}|${week1.filter(x=>x.stats).length}`;   // invalidates itself as results and box scores arrive
   return ratingCache[key] ||= buildRatings(week1.filter(x => x.final && x.week < wk)); };
 const histFor = wk => (wk == null || wk >= CUR) ? week1 : week1.filter(x => x.week < wk);   // what the model knew before that week
 const isFCSGame = g => !NFL && (!isFBS(g.home) || !isFBS(g.away));
@@ -480,7 +481,18 @@ function marketRatings(uptoWeek, src = null, tag = "live"){   // team -> rating 
   }
   return mktCache[key] = r;
 }
-function buildRatings(games = week1, K = K_SHRINK, src = null, prior = PRIOR, tag = "live"){
+/* ---------- EPA inputs: expected points added per play, from data/epa-<league>.json (built weekly by scripts/build_epa.py) ----------
+   A game's EPA margin (home offense total EPA − away offense total EPA) is the score margin with the luck taken out: no special-teams
+   flukes, no garbage-time noise, every play weighted by what it was worth. EPA_SHARE says how much of a game's "performance" comes
+   from that instead of the raw margin/yards/turnovers line. The Inputs button turns it off; the Lab measures whether it helps. */
+let EPA = null, EPA_ON = store.get("epa", true), EPA_UPDATED = null; const EPA_SHARE = 0.6;
+async function loadEpa(){ try{ const r = await fetch(`data/epa-${LG.id}.json?v=${Math.floor(Date.now()/36e5)}`); if(r.ok){ const d = await r.json(); EPA = d.seasons || null; EPA_UPDATED = d.updated || null; } }catch(_){} renderInputs(); }
+const epaOf = g => { const s = EPA?.[String(g.season ?? YEAR)]?.[String(g.week)]; if(!s) return null; const h = s[g.home], a = s[g.away]; return h && a && h.tot != null && a.tot != null ? {h, a} : null; };
+const epaSeason = (t, H) => { let o = 0, d = 0, n = 0; for(const g of H){ if(!g.final || (g.home !== t && g.away !== t)) continue; const e = EPA?.[String(g.season ?? YEAR)]?.[String(g.week)]?.[t]; if(e && e.o != null && e.d != null){ o += e.o; d += e.d; n++; } } return n ? {o: o/n, d: d/n, n} : null; };
+function renderInputs(){ const b = document.getElementById("inputs"); if(!b) return; const have = !!EPA;
+  b.textContent = have ? `Inputs: ${EPA_ON ? "Margin + EPA" : "Margin only"}` : "Inputs: Margin (no EPA data)"; b.disabled = !have; b.classList.toggle("primary", have && EPA_ON);
+  b.title = have ? `EPA per play from ${NFL ? "nflverse" : "collegefootballdata.com"}${EPA_UPDATED ? `, updated ${new Date(EPA_UPDATED).toLocaleDateString("en-US",{month:"short",day:"numeric"})}` : ""}. Off = the original margin / yards / turnovers inputs.` : `No data/epa-${LG.id}.json yet${NFL ? "" : " — the weekly job needs a CFBD_API_KEY secret to build the college file"}.`; }
+function buildRatings(games = week1, K = K_SHRINK, src = null, prior = PRIOR, tag = "live", epaShare = (EPA_ON && EPA ? EPA_SHARE : 0)){
   const perf = {};                                   // team -> [{v, opp}]
   const upto = games.length ? Math.max(...games.map(g => g.week)) + 1 : CUR;   // lines through the week being predicted are known before kickoff
   const mkt = prior === "market" ? marketRatings(Math.min(upto, MAX_WEEK), src, tag) : null;
@@ -489,7 +501,9 @@ function buildRatings(games = week1, K = K_SHRINK, src = null, prior = PRIOR, ta
     const m = Math.max(-MARGIN_CAP, Math.min(MARGIN_CAP, g.hs - g.as)), st = g.stats || {};
     const yppD = (st.ypp?.[g.home] ?? 0) - (st.ypp?.[g.away] ?? 0);
     const toD  = (st.to?.[g.away] ?? 0) - (st.to?.[g.home] ?? 0);
-    const v = (m - (g.neutral ? 0 : HFA)) + 3.0*yppD + 2.0*toD;      // home's single-game performance, home field removed
+    let v = (m - (g.neutral ? 0 : HFA)) + 3.0*yppD + 2.0*toD;        // home's single-game performance, home field removed
+    const e = epaShare ? epaOf(g) : null;
+    if(e){ const ve = Math.max(-MARGIN_CAP, Math.min(MARGIN_CAP, e.h.tot - e.a.tot)) - (g.neutral ? 0 : HFA); v = (1 - epaShare)*v + epaShare*ve; }   // EPA margin: the score margin with the luck removed
     (perf[g.home] ||= []).push({v, opp:g.away});
     (perf[g.away] ||= []).push({v:-v, opp:g.home});
   }
@@ -993,7 +1007,8 @@ function tapeRows(g, H){                             // the "why" behind the num
   const form = t => { const gs = H.filter(x => x.final && (x.home===t || x.away===t)).sort((a,b)=>(a.ts||0)-(b.ts||0)).slice(-3);
     return gs.length ? gs.map(x => { const me = x.home===t?x.hs:x.as, them = x.home===t?x.as:x.hs; return `<span class="grade ${me>them?"W":"L"}" style="margin-left:2px">${me>them?"W":"L"}</span>`; }).join("") : "—"; };
   const sc = t => { const s = scoring(t, H); return s.n ? `${s.pf.toFixed(0)} / ${s.pa.toFixed(0)}` : "—"; };
-  return `<tr><td>Last 3</td><td>${form(g.away)}</td><td>${form(g.home)}</td></tr>
+  const ea = epaSeason(g.away, H), eh = epaSeason(g.home, H), epaRows = (ea || eh) ? `<tr><td>EPA/play, offense</td><td>${ea?ea.o.toFixed(2):"—"}</td><td>${eh?eh.o.toFixed(2):"—"}</td></tr><tr><td>EPA/play allowed</td><td>${ea?ea.d.toFixed(2):"—"}</td><td>${eh?eh.d.toFixed(2):"—"}</td></tr>` : "";
+  return `${epaRows}<tr><td>Last 3</td><td>${form(g.away)}</td><td>${form(g.home)}</td></tr>
     <tr><td>Last result</td><td>${w1line(g.away,H)}</td><td>${w1line(g.home,H)}</td></tr>
     <tr><td>ATS this season</td><td>${atsRec(g.away)}</td><td>${atsRec(g.home)}</td></tr>
     <tr><td>Avg yds / play</td><td>${cell("ypp",g.away)}</td><td>${cell("ypp",g.home)}</td></tr>
@@ -1293,6 +1308,8 @@ function renderPrior(){ const b = document.getElementById("prior"); if(b){ b.tex
 document.getElementById("prior").addEventListener("click", () => { PRIOR = PRIOR === "market" ? "average" : "market"; store.set("prior", PRIOR); renderPrior();
   ratings = buildRatings(); backtest(); render(); });
 renderPrior();
+document.getElementById("inputs").addEventListener("click", () => { if(!EPA) return; EPA_ON = !EPA_ON; store.local("epa", EPA_ON); renderInputs(); ratings = buildRatings(); backtest(); render(); });
+renderInputs();
 function setStatus(extra = ""){
   const st = document.getElementById("status");
   const inPlay = week1.filter(g=>g.state==="in").length + week2.filter(g=>g.state==="in").length, finals = week2.filter(g=>g.final).length;
@@ -1347,7 +1364,7 @@ applyTheme();
 const LAB_YEARS = [2023, 2024, 2025];
 let labBusy = false, labAbort = false, labStatus = "", labResults = store.get("lab", null);
 const labKey = y => skey(`lab:${y}`);
-function labLoad(y){ try{ const v = localStorage.getItem(labKey(y)); return v ? JSON.parse(v).map(r => ({week:r[0], home:r[1], away:r[2], hs:r[3], as:r[4], neutral:!!r[5], spread:r[6], ou:r[7], final:true, ts:r[12] || 0,
+function labLoad(y){ try{ const v = localStorage.getItem(labKey(y)); return v ? JSON.parse(v).map(r => ({season:y, week:r[0], home:r[1], away:r[2], hs:r[3], as:r[4], neutral:!!r[5], spread:r[6], ou:r[7], final:true, ts:r[12] || 0,
   stats:{ypp:{[r[1]]:r[8], [r[2]]:r[9]}, to:{[r[1]]:r[10], [r[2]]:r[11]}}})) : null; }catch(_){ return null; } }
 function labSave(y, games){ const rows = games.map(g => [g.week, g.home, g.away, g.hs, g.as, g.neutral?1:0, g.spread, g.ou, g.stats?.ypp?.[g.home] ?? null, g.stats?.ypp?.[g.away] ?? null, g.stats?.to?.[g.home] ?? null, g.stats?.to?.[g.away] ?? null, g.ts]);
   try{ localStorage.setItem(labKey(y), JSON.stringify(rows)); return true; }catch(_){ return false; } }
@@ -1361,7 +1378,7 @@ async function labFetchSeason(y, onProgress){
     for(const ev of evs){
       const c = ev.competitions[0]; const h = c.competitors.find(x=>x.homeAway==="home"), a = c.competitors.find(x=>x.homeAway==="away"); if(!h || !a) continue;
       if(!NFL){ const ok = t => { const cf = t.team?.conferenceId; return cf != null && cf !== "" ? FBS_CONF.has(String(cf)) : true; }; if(!ok(h) || !ok(a)) continue; }   // FBS vs FBS only
-      const g = {week:wk, home:norm(h.team.abbreviation), away:norm(a.team.abbreviation), hs:+h.score, as:+a.score, neutral:!!c.neutralSite, ts:+new Date(ev.date), final:true, spread:null, ou:null, stats:null};
+      const g = {season:y, week:wk, home:norm(h.team.abbreviation), away:norm(a.team.abbreviation), hs:+h.score, as:+a.score, neutral:!!c.neutralSite, ts:+new Date(ev.date), final:true, spread:null, ou:null, stats:null};
       jobs.push(async () => { if(labAbort) return; const st = await fetchBox(ev.id, false, true); if(!st) return;
         const fake = st.pc ? {odds:[st.pc]} : null; if(fake){ g.spread = parseSpread(fake, g.home, g.away); g.ou = parseTotal(fake); }
         g.stats = {ypp: st.ypp || {}, to: st.to || {}}; });
@@ -1374,12 +1391,12 @@ async function labFetchSeason(y, onProgress){
   return games.filter(g => g.spread != null);
 }
 /* walk-forward evaluation of one season with one prior; returns per-game rows with the model line and market line */
-function labEvaluate(games, prior, tag){
+function labEvaluate(games, prior, tag, epaShare = 0){
   const rows = [], weeks = [...new Set(games.map(g => g.week))].sort((a,b)=>a-b);
   const totCache = {};
   for(const wk of weeks){ if(wk < 2) continue;
     const hist = games.filter(g => g.week < wk); if(!hist.length) continue;
-    const r = buildRatings(hist, K_SHRINK, games, prior, tag);
+    const r = buildRatings(hist, K_SHRINK, games, prior, tag + "e" + epaShare, epaShare);
     for(const g of games.filter(x => x.week === wk)){
       if(!(g.home in r) || !(g.away in r)) continue;
       const model = r[g.home] - r[g.away] + (g.neutral ? 0 : HFA), market = -g.spread, actual = g.hs - g.as;
@@ -1425,6 +1442,9 @@ async function runLab(){
     for(const prior of ["market","average"]){ let allRows = [];
       for(const y of LAB_YEARS){ const rows = labEvaluate(data[y], prior, `lab${y}`); allRows = allRows.concat(rows); (out.years[y] ||= {})[prior] = labSummarize(rows); }
       out.all[prior] = labSummarize(allRows); }
+    if(EPA){ out.epa = {}; const covered = LAB_YEARS.filter(y => EPA[String(y)]);
+      for(const share of [0, 0.3, 0.6, 1]){ let allRows = []; for(const y of covered){ allRows = allRows.concat(labEvaluate(data[y].filter(g => epaOf(g)), "market", `lab${y}`, share)); }
+        out.epa[share] = labSummarize(allRows); } out.epaYears = covered; }
     out.games = Object.fromEntries(LAB_YEARS.map(y => [y, data[y].length]));
     labResults = out; store.local("lab", out);
   }catch(err){ renderLab(err.message === "stopped" ? "Stopped." : `Couldn't finish: ${err.message}`); labBusy = false; return; }
@@ -1433,7 +1453,7 @@ async function runLab(){
 function renderLab(status){
   const box = document.getElementById("lab"); if(!box) return;
   if(status != null) labStatus = status; if(labBusy && status == null) status = labStatus;
-  const pc = v => v == null ? "—" : (v*100).toFixed(1) + "%";
+  const pc = v => v == null ? "—" : (v*100).toFixed(1) + "%"; const pctOf2 = r => r.W + r.L ? r.W/(r.W+r.L) : null;
   const cls = v => v == null ? "" : v >= .524 ? "pos" : v <= .48 ? "neg" : "";
   const recTxt = r => `${r.W}–${r.L}${r.P?"–"+r.P:""}`;
   const btn = `<div class="btns"><button class="${labBusy?"":"primary"}" id="labRun">${labBusy ? "Stop" : labResults ? "Re-run the Lab" : `Run the Lab (${LAB_YEARS[0]}–${LAB_YEARS[LAB_YEARS.length-1]})`}</button>${status?`<span class="note" style="margin:0">${status}</span>`:""}</div>`;
@@ -1463,6 +1483,9 @@ function renderLab(status){
     <div class="tablewrap"><table><tr><th>Stats-only vs line</th><th>Games</th><th>Covered</th></tr>${m.rawBuckets.map(bRow).join("")}</table></div>
     <h3 style="margin:14px 0 4px;font-size:16px">Totals: projection vs the number</h3>
     <div class="tablewrap"><table><tr><th>Projection vs O/U</th><th>Games</th><th>Hit</th></tr>${m.totBuckets.map(bRow).join("")}</table></div>
+    ${R.epa ? `<h3 style="margin:14px 0 4px;font-size:16px">Inputs: how much EPA to use (${R.epaYears.join(", ")}, games with EPA for both teams, market prior)</h3>
+    <div class="tablewrap"><table><tr><th>EPA share</th><th>Games</th><th>Miss, 35% blend</th><th>ATS, 35% blend</th><th>Blend 2+ pts off the line</th><th>Stats-only 6+ pts off</th></tr>${Object.entries(R.epa).map(([share, e]) => { const b = e.sweep.find(x => x.w === .35); const big = e.buckets.filter(x => x.lo >= 2).reduce((a,x) => ({W:a.W+x.W, L:a.L+x.L, P:a.P+x.P}), {W:0,L:0,P:0}); const raw = e.rawBuckets.filter(x => x.lo >= 6).reduce((a,x) => ({W:a.W+x.W, L:a.L+x.L, P:a.P+x.P}), {W:0,L:0,P:0});
+      return `<tr><td>${share === "0" ? "0% (margin only)" : share === "1" ? "100% (EPA only)" : `${Math.round(share*100)}% EPA`}</td><td>${e.n}</td><td>${b.rmse.toFixed(2)}</td><td class="${cls(b.pct)}">${recTxt(b)} · ${pc(b.pct)}</td><td class="${cls(pctOf2(big))}">${recTxt(big)} · ${pc(pctOf2(big))}</td><td class="${cls(pctOf2(raw))}">${recTxt(raw)} · ${pc(pctOf2(raw))}</td></tr>`; }).join("")}</table></div>` : `<p class="note">No EPA data for this league yet, so the inputs comparison is skipped.</p>`}
     <h3 style="margin:14px 0 4px;font-size:16px">By season (35% blend, market prior)</h3>
     <div class="tablewrap"><table><tr><th>Season</th><th>Games</th><th>Miss</th><th>ATS</th><th>Market-only miss</th></tr>${LAB_YEARS.map(y => { const s = R.years[y]?.market; if(!s) return ""; const b = s.sweep.find(x => x.w === .35), z = s.sweep.find(x => x.w === 0); return `<tr><td>${y}</td><td>${s.n}</td><td>${b.rmse.toFixed(2)}</td><td class="${cls(b.pct)}">${recTxt(b)} · ${pc(b.pct)}</td><td>${z.rmse.toFixed(2)}</td></tr>`; }).join("")}</table></div>
     <p class="note">Miss = root-mean-square error of the predicted margin, in points (the line itself is usually ~13–14). Any stats weight above zero picks the same side — the weight only changes how confident the pick looks — so the ATS record repeats down the column and the buckets below are the real test. 52.4% is break-even at -110; a bucket needs a few hundred games before a percentage means much. Green = above break-even, red = clearly below.</p>
@@ -1483,6 +1506,7 @@ function renderLab(status){
 })();
 async function init(){
   week2.forEach(registerOpen); week1.forEach(registerOpen);
+  if(!EPA) loadEpa().then(() => { if(live){ ratings = buildRatings(); backtest(); render(); } });
   ratings = buildRatings(); render(); backtest();   // draw immediately from built-in data
   cloud.init().catch(err => { cloud.msg = "Sync unavailable: " + err.message; renderAuth(); });
   try{ await loadLive(); }
