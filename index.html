@@ -228,7 +228,6 @@
       <button id="best" aria-pressed="false">Best bets</button>
       <button id="recap">Recap</button>
       <button id="notify" title="Get a notification when a line moves on a play or a logged bet">Alerts: Off</button>
-      <button id="prior" title="What a team is assumed to be before its results say otherwise: the market's rating, or league average (the original model)">Prior: Market</button>
       <button id="inputs" title="Which per-game inputs feed the ratings">Inputs: Margin</button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter games"></div>
@@ -249,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.7</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.8</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -470,8 +469,10 @@ const Phi = z => { const t = 1/(1+0.2316419*Math.abs(z)); const d = 0.3989423*Ma
 /* ---------- the prior: what a team is assumed to be before its results say otherwise ----------
    "market": each team's rating implied by the betting lines themselves, solved across every game on the board through that week —
    so a team with no results starts at the market's opinion and the stats only move it off the line with evidence.
-   "average": the original v1–v4 behaviour — every FBS team starts at 0, which in September leans the model toward every underdog. */
-let PRIOR = store.get("prior", "market");
+   "average": the original v1–v4 behaviour — every FBS team starts at 0, which in September leans the model toward every underdog.
+   The live app is fixed on "market" (v4.8): the Lab buckets, evidence gate and angles were all measured with it, so the badges' Lab rates only
+   hold for that setting. "average" survives only inside the Lab as a comparison column. */
+const PRIOR = "market";
 const mktCache = {};
 function marketRatings(uptoWeek, src = null, tag = "live"){   // team -> rating implied by the spreads of games in weeks <= uptoWeek (src: another season's games, for the Lab)
   const pool = (src || [...week1, ...week2, ...Object.values(future).flat()]).filter(g => g.spread != null && g.week <= uptoWeek);
@@ -1388,10 +1389,6 @@ document.getElementById("notify").addEventListener("click", async () => {
 });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 renderNotify();
-function renderPrior(){ const b = document.getElementById("prior"); if(b){ b.textContent = `Prior: ${PRIOR === "market" ? "Market" : "Average"}`; b.classList.toggle("primary", PRIOR === "market"); } }
-document.getElementById("prior").addEventListener("click", () => { PRIOR = PRIOR === "market" ? "average" : "market"; store.set("prior", PRIOR); renderPrior();
-  ratings = buildRatings(); backtest(); render(); });
-renderPrior();
 document.getElementById("inputs").addEventListener("click", () => { if(!EPA) return; EPA_ON = !EPA_ON; store.local("epa", EPA_ON); renderInputs(); ratings = buildRatings(); backtest(); render(); });
 renderInputs();
 function setStatus(extra = ""){
