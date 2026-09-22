@@ -249,7 +249,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.6</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.7</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -632,7 +632,7 @@ const wxChip = g => { const w = g.wx; if(!w || g.final || g.state==="in") return
 function evalTotal(g, w){
   if(g.ou == null || isFCSGame(g)) return null;      // no total play against an FCS prior either
   const wx = wxAdj(g), model = projectTotal(g) - wx.pts, blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
-  const gate = gateTotal(model - g.ou);
+  const gate = gateTotal(model - g.ou, g.week);
   return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under", wx, gate, play: gate.ok};
 }
 const gamesPlayed = (t, games = week1) => games.filter(g => g.final && (g.home===t || g.away===t)).length;
@@ -654,12 +654,15 @@ function injAdj(t){                                  // penalty in points for li
    Sides are gated by how far the stats line sits from the market line (the raw disagreement, independent of the slider); totals by
    how far the projection sits from the number; angles by their own historical record. A bucket qualifies when it has 100+ games
    and covered 53%+ (break-even is 52.4%). LAB_DEFAULTS are the Sep 22 2026 runs; a Lab run on this device replaces them. */
-const GATE_MIN_N = 100, GATE_MIN_PCT = 0.53;
+const GATE_MIN_N = 100, GATE_MIN_PCT = 0.535, EARLY_WK = 4;   // 53.5% = break-even plus a cushion; totals are gated separately for weeks 1–4 and 5+
 const LAB_DEFAULTS = {
   nfl: { rawBuckets:[{lo:0,hi:3,n:185,W:93,L:92,P:0,pct:.503},{lo:3,hi:6,n:166,W:89,L:77,P:0,pct:.536},{lo:6,hi:10,n:110,W:61,L:49,P:0,pct:.555},{lo:10,hi:99,n:68,W:29,L:39,P:0,pct:.426}],
-         totBuckets:[{lo:0,hi:2,n:242,W:124,L:118,P:0,pct:.512},{lo:2,hi:4,n:154,W:80,L:74,P:0,pct:.519},{lo:4,hi:7,n:87,W:47,L:40,P:0,pct:.540},{lo:7,hi:99,n:20,W:12,L:8,P:0,pct:.600}], angles:[] },
+         totBuckets:[{lo:0,hi:2,n:242,W:124,L:118,P:0,pct:.512},{lo:2,hi:4,n:154,W:80,L:74,P:0,pct:.519},{lo:4,hi:7,n:87,W:47,L:40,P:0,pct:.540},{lo:7,hi:99,n:20,W:12,L:8,P:0,pct:.600}],
+         angles:[{id:"bigFav",n:50,W:29,L:21,P:0,pct:.58},{id:"divDog",n:190,W:103,L:87,P:0,pct:.542},{id:"homeDog",n:219,W:105,L:114,P:0,pct:.479},{id:"earlyOver",n:4,W:3,L:1,P:0,pct:.75},{id:"lateOver",n:11,W:5,L:6,P:0,pct:.455},{id:"bigUnder",n:5,W:4,L:1,P:0,pct:.8}] },
   cfb: { rawBuckets:[{lo:0,hi:3,n:636,W:320,L:309,P:7,pct:.509},{lo:3,hi:6,n:560,W:274,L:282,P:4,pct:.493},{lo:6,hi:10,n:458,W:213,L:239,P:6,pct:.471},{lo:10,hi:99,n:274,W:145,L:129,P:0,pct:.529}],
-         totBuckets:[{lo:0,hi:2,n:386,W:201,L:184,P:1,pct:.522},{lo:2,hi:4,n:352,W:177,L:174,P:1,pct:.504},{lo:4,hi:7,n:470,W:245,L:224,P:1,pct:.522},{lo:7,hi:99,n:668,W:363,L:301,P:4,pct:.547}], angles:[] } };
+         totBuckets:[{lo:0,hi:2,n:386,W:201,L:184,P:1,pct:.522},{lo:2,hi:4,n:352,W:177,L:174,P:1,pct:.504},{lo:4,hi:7,n:470,W:245,L:224,P:1,pct:.522},{lo:7,hi:99,n:668,W:363,L:301,P:4,pct:.547}],
+         totEarly:[{lo:0,hi:7,n:300,W:150,L:150,P:0,pct:.50},{lo:7,hi:99,n:132,W:81,L:51,P:0,pct:.614}], totLate:[{lo:0,hi:7,n:900,W:450,L:450,P:0,pct:.50},{lo:7,hi:99,n:536,W:282,L:250,P:4,pct:.530}],
+         angles:[{id:"bigFav",n:780,W:374,L:401,P:5,pct:.483},{id:"homeDog",n:741,W:373,L:360,P:8,pct:.509},{id:"earlyOver",n:119,W:72,L:47,P:0,pct:.605},{id:"lateOver",n:517,W:270,L:244,P:3,pct:.525},{id:"bigUnder",n:32,W:21,L:10,P:1,pct:.677}] } };
 const ANGLES = [                                     // situational angles the Lab scores on the same seasons; x is a lab/live row (see rowFor)
   {id:"bigFav", label:"Favorite of 10+", type:"side", applies:x => x.spread != null && Math.abs(x.spread) >= 10, pickHome:x => x.spread < 0},
   {id:"divDog", label:"Divisional underdog", type:"side", nfl:true, applies:x => x.div && x.spread != null && x.spread !== 0, pickHome:x => x.spread > 0},
@@ -672,7 +675,9 @@ const rowFor = (g, e, t) => ({g, wk:g.week, spread:e.spread, div: NFL && isDivGa
 const labSummary = () => (typeof labResults !== "undefined" && labResults?.all?.market) || LAB_DEFAULTS[LG.id] || null;
 const gateOk = b => !!b && b.n >= GATE_MIN_N && b.pct != null && b.pct >= GATE_MIN_PCT;
 function gateSide(rawEdge){ const S = labSummary(); if(!S || rawEdge == null) return {ok:false}; const b = S.rawBuckets.find(b => Math.abs(rawEdge) >= b.lo && Math.abs(rawEdge) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
-function gateTotal(diff){ const S = labSummary(); if(!S || diff == null) return {ok:false}; const b = S.totBuckets.find(b => Math.abs(diff) >= b.lo && Math.abs(diff) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
+function gateTotal(diff, wk){ const S = labSummary(); if(!S || diff == null) return {ok:false};
+  const list = (wk != null && wk <= EARLY_WK ? S.totEarly : S.totLate) || S.totBuckets;   // early-season totals behave differently, so they're judged separately
+  const b = list.find(b => Math.abs(diff) >= b.lo && Math.abs(diff) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi, early: wk != null && wk <= EARLY_WK} : {ok:false}; }
 function anglesFor(row){ const S = labSummary(); return ANGLES.filter(a => (!a.nfl || NFL) && a.applies(row)).map(a => { const st = S?.angles?.find(x => x.id === a.id); return {...a, side: a.type === "side" ? (a.pickHome(row) ? row.g.home : row.g.away) : (a.over(row) ? "Over" : "Under"), n: st?.n ?? 0, pct: st?.pct ?? null, ok: gateOk(st)}; }); }
 const labPct = (n, pct) => pct == null ? "no Lab data" : `${Math.round(pct*100)}% on ${n}`;
 function evaluate(g, w){
@@ -1498,8 +1503,9 @@ function labSummarize(rows){
   const rawBuckets = [[0,3],[3,6],[6,10],[10,99]].map(([lo,hi]) => { const list = rows.filter(x => Math.abs(stats(x)) >= lo && Math.abs(stats(x)) < hi);
     const r = rec(list, x => stats(x) > 0); return {lo, hi, n: list.length, ...r, pct: pctOf(r)}; });
   const tot = rows.filter(x => x.ou != null && x.totModel != null);
-  const totBuckets = [[0,2],[2,4],[4,7],[7,99]].map(([lo,hi]) => { const list = tot.filter(x => Math.abs(x.totModel - x.ou) >= lo && Math.abs(x.totModel - x.ou) < hi);
+  const totBucketsOf = src => [[0,2],[2,4],[4,7],[7,99]].map(([lo,hi]) => { const list = src.filter(x => Math.abs(x.totModel - x.ou) >= lo && Math.abs(x.totModel - x.ou) < hi);
     const r = {W:0,L:0,P:0}; for(const x of list){ const d = x.totActual - x.ou; if(d === 0){ r.P++; continue; } ((d > 0) === (x.totModel > x.ou)) ? r.W++ : r.L++; } return {lo, hi, n: list.length, ...r, pct: pctOf(r)}; });
+  const totBuckets = totBucketsOf(tot), totEarly = totBucketsOf(tot.filter(x => x.wk <= EARLY_WK)), totLate = totBucketsOf(tot.filter(x => x.wk > EARLY_WK));
   const splits = {
     favsCovered: rec(rows.filter(x => x.fav !== "pick"), x => x.fav === "home"), homeCovered: rec(rows, x => true),
     bigFavsCovered: rec(rows.filter(x => x.big), x => x.fav === "home"), divFavsCovered: NFL ? rec(rows.filter(x => x.div), x => x.fav === "home") : null,
@@ -1508,7 +1514,7 @@ function labSummarize(rows){
     if(a.type === "side") r = rec(list, x => a.pickHome(x));
     else { r = {W:0,L:0,P:0}; for(const x of list){ const d = x.totActual - x.ou; if(d === 0){ r.P++; continue; } ((d > 0) === a.over(x)) ? r.W++ : r.L++; } }
     return {id:a.id, label:a.label, type:a.type, n:list.length, ...r, pct: pctOf(r)}; });
-  return {n: rows.length, sweep, buckets, rawBuckets, totBuckets, splits, angles, weeks: new Set(rows.map(x => x.wk)).size};
+  return {n: rows.length, sweep, buckets, rawBuckets, totBuckets, totEarly, totLate, splits, angles, weeks: new Set(rows.map(x => x.wk)).size};
 }
 async function runLab(){
   if(labBusy){ labAbort = true; return; }
@@ -1566,9 +1572,11 @@ function renderLab(status){
     <div class="tablewrap"><table><tr><th>Blend vs line</th><th>Games</th><th>Covered</th></tr>${m.buckets.map(bRow).join("")}</table></div>
     <div class="tablewrap"><table><tr><th>Stats-only vs line</th><th>Games</th><th>Covered</th></tr>${m.rawBuckets.map(bRow).join("")}</table></div>
     <h3 style="margin:14px 0 4px;font-size:16px">Situational angles</h3>
-    <div class="tablewrap"><table><tr><th>Angle</th><th>Games</th><th>Covered / hit</th><th>Play?</th></tr>${(m.angles||[]).map(a => `<tr><td>${a.label}</td><td>${a.n}</td><td class="${cls(a.pct)}">${recTxt(a)} · ${pc(a.pct)}</td><td>${gateOk(a) ? "<b class=pos>yes</b>" : a.n < GATE_MIN_N ? "too few games" : "no"}</td></tr>`).join("")}</table></div>
+    <div class="tablewrap"><table><tr><th>Angle</th><th>Games</th><th>Covered / hit</th><th>Play?</th></tr>${(m.angles||[]).map(a => `<tr><td>${a.label || ANGLES.find(x => x.id === a.id)?.label || a.id}</td><td>${a.n}</td><td class="${cls(a.pct)}">${recTxt(a)} · ${pc(a.pct)}</td><td>${gateOk(a) ? "<b class=pos>yes</b>" : a.n < GATE_MIN_N ? "too few games" : "no"}</td></tr>`).join("")}</table></div>
     <h3 style="margin:14px 0 4px;font-size:16px">Totals: projection vs the number</h3>
     <div class="tablewrap"><table><tr><th>Projection vs O/U</th><th>Games</th><th>Hit</th></tr>${m.totBuckets.map(bRow).join("")}</table></div>
+    ${m.totEarly ? `<div class="tablewrap"><table><tr><th>Weeks 1–${EARLY_WK} only</th><th>Games</th><th>Hit</th></tr>${m.totEarly.map(bRow).join("")}</table></div>
+    <div class="tablewrap"><table><tr><th>Week ${EARLY_WK+1} on</th><th>Games</th><th>Hit</th></tr>${m.totLate.map(bRow).join("")}</table></div>` : ""}
     ${R.epa ? `<h3 style="margin:14px 0 4px;font-size:16px">Inputs: how much EPA to use (${R.epaYears.join(", ")}, games with EPA for both teams, market prior)</h3>
     <div class="tablewrap"><table><tr><th>EPA share</th><th>Games</th><th>Miss, 35% blend</th><th>ATS, 35% blend</th><th>Blend 2+ pts off the line</th><th>Stats-only 6+ pts off</th></tr>${Object.entries(R.epa).map(([share, e]) => { const b = e.sweep.find(x => x.w === .35); const big = e.buckets.filter(x => x.lo >= 2).reduce((a,x) => ({W:a.W+x.W, L:a.L+x.L, P:a.P+x.P}), {W:0,L:0,P:0}); const raw = e.rawBuckets.filter(x => x.lo >= 6).reduce((a,x) => ({W:a.W+x.W, L:a.L+x.L, P:a.P+x.P}), {W:0,L:0,P:0});
       return `<tr><td>${share === "0" ? "0% (margin only)" : share === "1" ? "100% (EPA only)" : `${Math.round(share*100)}% EPA`}</td><td>${e.n}</td><td>${b.rmse.toFixed(2)}</td><td class="${cls(b.pct)}">${recTxt(b)} · ${pc(b.pct)}</td><td class="${cls(pctOf2(big))}">${recTxt(big)} · ${pc(pctOf2(big))}</td><td class="${cls(pctOf2(raw))}">${recTxt(raw)} · ${pc(pctOf2(raw))}</td></tr>`; }).join("")}</table></div>` : `<p class="note">No EPA data for this league yet, so the inputs comparison is skipped.</p>`}
