@@ -1,0 +1,33 @@
+# Rebuilds data/epa-nfl.json (and data/epa-cfb.json when the CFBD_API_KEY secret is set) every week in season,
+# commits it if anything changed, and Vercel redeploys from that commit. Run it by hand from the Actions tab too.
+name: Refresh EPA data
+on:
+  schedule:
+    - cron: "17 13 * * 2,3"   # Tue + Wed 13:17 UTC: after Monday night, and again once nflverse/CFBD have caught up
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: epa
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build EPA files
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+        run: python scripts/build_epa.py
+      - name: Commit if changed
+        run: |
+          git add data/
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: weekly EPA refresh"
+          git push

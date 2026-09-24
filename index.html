@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.9</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v5.0</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -643,12 +643,17 @@ function restAdj(g){                                 // + favors home. ~0.3 pts 
   const rh = Math.round((g.ts-h)/864e5), ra = Math.round((g.ts-a)/864e5), d = Math.max(-5, Math.min(5, rh - ra));
   return {pts: 0.3*d, text: d ? `${d>0?g.home:g.away} +${Math.abs(d)} days rest` : ""};
 }
-function injAdj(t){                                  // penalty in points for listed Out/Doubtful players; QB dominates
-  const list = injuries[t] || []; let pts = 0; const notes = [];
+/* The QB who started the team's most recent game, from its box score. Only he carries the big QB penalty: a backup on the report
+   costs nothing, and a starter who already missed last week is priced into the ratings and the line by now. */
+function starterQB(t){ const gs = week1.filter(g => g.final && (g.home===t || g.away===t) && g.stats?.qb?.[t]).sort((a,b) => (b.ts||0) - (a.ts||0)); return gs[0]?.stats.qb[t] || null; }
+const sameAthlete = (i, q) => !!q && ((i.id && q.id && i.id === q.id) || (!!i.name && i.name === q.name));
+function injAdj(t){                                  // penalty in points for listed Out/Doubtful players; the starting QB dominates
+  const list = injuries[t] || [], qb = starterQB(t); let pts = 0; const notes = [];
   for(const i of list){ const out = /out|doubtful|ir\b/i.test(i.status), q = /questionable/i.test(i.status);
     if(!out && !q) continue;
-    const w = i.pos==="QB" ? (out?4:1) : /^(RB|WR|TE|OT|OG|C|G|T|OL|DE|DT|DL|LB|EDGE|CB|S|DB)$/.test(i.pos) ? (out?0.5:0.15) : 0.1;
-    pts += w; if(out || i.pos==="QB") notes.push(`${i.name} (${i.pos}) ${i.status}`); }
+    const starter = i.pos === "QB" && (!qb || sameAthlete(i, qb));   // no box score yet (Week 1): assume a listed QB matters, as before
+    const w = i.pos==="QB" ? (starter ? (out?4:1) : 0) : /^(RB|WR|TE|OT|OG|C|G|T|OL|DE|DT|DL|LB|EDGE|CB|S|DB)$/.test(i.pos) ? (out?0.5:0.15) : 0.1;
+    pts += w; if(out || starter) notes.push(`${i.name} (${i.pos}${i.pos==="QB" && qb ? (starter ? ", started last game" : ", didn't start last game") : ""}) ${i.status}`); }
   return {pts: Math.min(6, pts), notes};
 }
 /* ---------- the evidence gate: a pick is a PLAY only where the Lab says that kind of pick has actually paid ----------
@@ -1209,9 +1214,15 @@ function parseSpread(comp, home, away){
   return typeof o.spread==="number" ? o.spread : null;
 }
 async function fetchBox(eventId, cache=false, needLine=false){
-  if(cache && boxCache[eventId] && !(needLine && !boxCache[eventId].line && !boxCache[eventId].pc)) return boxCache[eventId];
+  if(cache && boxCache[eventId]?.qb && !(needLine && !boxCache[eventId].line && !boxCache[eventId].pc)) return boxCache[eventId];   // boxes cached before v5 have no qb: fetch once more
   const sum = await j(`${ESPN}/summary?event=${eventId}`);
-  const st = {ypp:{}, to:{}, yds:{}};
+  const st = {ypp:{}, to:{}, yds:{}, qb:{}};
+  for(const t of sum.boxscore?.players||[]){          // who started at QB: the passer with the most attempts (ESPN lists "C/ATT")
+    const pass = t.statistics?.find(s => s.name === "passing"), ki = pass?.keys?.findIndex(k => /passingAttempts/i.test(k)) ?? -1;
+    const att = a => { const v = ki >= 0 ? a.stats?.[ki] : null; const n = parseFloat(String(v ?? "").split("/")[1]); return isNaN(n) ? 0 : n; };
+    const top = (pass?.athletes || []).slice().sort((a,b) => att(b) - att(a))[0];
+    if(top?.athlete && t.team?.abbreviation) st.qb[norm(t.team.abbreviation)] = {id: String(top.athlete.id ?? ""), name: top.athlete.displayName || top.athlete.shortName || ""};
+  }
   for(const t of sum.boxscore?.teams||[]){
     const ab = norm(t.team.abbreviation); const get = n => t.statistics?.find(s=>s.name===n)?.displayValue;
     let y = parseFloat(get("yardsPerPlay"));
@@ -1229,7 +1240,7 @@ async function fetchBox(eventId, cache=false, needLine=false){
   let pc = cands.find(o => o.details || o.spread != null || o.overUnder != null || o.pointSpread);
   if(!pc){ try{ const od = await j(`${CORE}/events/${eventId}/competitions/${eventId}/odds`); pc = od.items?.[0]; }catch(_){} }   // second source: ESPN's core odds feed keeps every line
   if(pc) st.pc = {details: pc.details, spread: pc.spread, overUnder: pc.overUnder, pointSpread: pc.pointSpread, total: pc.total, homeTeamOdds: pc.homeTeamOdds, awayTeamOdds: pc.awayTeamOdds, moneyline: pc.moneyline};
-  const ok = Object.keys(st.ypp).length===2 ? st : (st.pc ? {ypp:{}, to:{}, yds:{}, pc: st.pc} : null);
+  const ok = Object.keys(st.ypp).length===2 ? st : (st.pc ? {ypp:{}, to:{}, yds:{}, qb: st.qb, pc: st.pc} : null);
   if(cache && ok){ boxCache[eventId] = ok; store.set("box", boxCache); }
   return ok;
 }
@@ -1240,7 +1251,7 @@ async function loadInjuries(){
     for(const team of r.injuries || []){
       const ab = teamIds[team.id] || norm(team.abbreviation || "") || Object.entries(teamIds).find(([id,a]) => team.displayName && NAMES[a] && team.displayName.endsWith(NAMES[a]))?.[1];
       if(!ab) continue;
-      out[ab] = (team.injuries || []).map(i => ({name: i.athlete?.displayName || i.athlete?.shortName || "?", pos: i.athlete?.position?.abbreviation || "", status: i.status || i.type?.description || ""}));
+      out[ab] = (team.injuries || []).map(i => ({id: String(i.athlete?.id ?? ""), name: i.athlete?.displayName || i.athlete?.shortName || "?", pos: i.athlete?.position?.abbreviation || "", status: i.status || i.type?.description || ""}));
     }
     if(Object.keys(out).length) injuries = out;
   }catch(_){}
@@ -1299,7 +1310,7 @@ async function loadWeek1(){                       // every game before the curre
         stats: prev?.stats || null, live: prev?.live || null};
       rememberLines(g); registerOpen(g);
       const needLine = g.spread == null;
-      if(g.final && !g.stats){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line && !c.pc)){ g.stats = c; applyLine(g, c); } else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true, needLine); applyLine(g, g.stats); }); }
+      if(g.final && !g.stats){ const c = boxCache[ev.id]; if(c?.qb && !(needLine && !c.line && !c.pc)){ g.stats = c; applyLine(g, c); } else boxJobs.push(async () => { g.stats = await fetchBox(ev.id, true, needLine); applyLine(g, g.stats); }); }
       else if(state==="in"){ boxJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); }); }
       games1.push(g);
     }
@@ -1335,7 +1346,7 @@ async function loadBoard(wk, prevList = []){          // one week's scoreboard �
     rememberLines(g); registerOpen(g);
     const needLine = g.spread == null;
     if(state==="in") liveJobs.push(async () => { g.live = await fetchBox(ev.id); applyLine(g, g.live); });
-    else if(g.final){ const c = boxCache[ev.id]; if(c && !(needLine && !c.line && !c.pc)){ g.live = c; applyLine(g, c); } else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true, needLine); applyLine(g, g.live); }); }
+    else if(g.final){ const c = boxCache[ev.id]; if(c?.qb && !(needLine && !c.line && !c.pc)){ g.live = c; applyLine(g, c); } else liveJobs.push(async () => { g.live = await fetchBox(ev.id, true, needLine); applyLine(g, g.live); }); }
     games2.push(g);
   }
   await pool(liveJobs);
