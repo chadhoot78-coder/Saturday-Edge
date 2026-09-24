@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.8</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.9</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -331,7 +331,7 @@ const LEAN_MIN = 1.5, SHARE_MAX = 18;
 let YEAR = 2026;
 const WEEK1_ROLL = new Date(YEAR, LG.week1[0], LG.week1[1]);   // until ESPN answers, estimate the week from today's date instead of guessing a number
 let CUR = Math.max(1, Math.min(MAX_WEEK, 1 + Math.floor((Date.now() - WEEK1_ROLL) / 6048e5)));
-const BREAK_EVEN = 100/210, PLAY_MIN = 0.545;       // -110 break-even is 52.4%; call it a play only with ~2% cushion
+const BREAK_EVEN = 110/210;                          // -110 break-even is 52.4%
 const KELLY_CAP = 0.05;                              // never suggest more than 5% of the bankroll on one bet, whatever the math says
 let VIEW = null;                                     // the week on screen; null = the current week (CUR)
 const GLOBAL_KEYS = ["theme","notify","view","geo","oddsKey"];   // settings shared by both leagues; everything else is per league
@@ -654,12 +654,15 @@ function injAdj(t){                                  // penalty in points for li
 /* ---------- the evidence gate: a pick is a PLAY only where the Lab says that kind of pick has actually paid ----------
    Sides are gated by how far the stats line sits from the market line (the raw disagreement, independent of the slider); totals by
    how far the projection sits from the number; angles by their own historical record. A bucket qualifies when it has 100+ games
-   and covered 53%+ (break-even is 52.4%). LAB_DEFAULTS are the Sep 22 2026 runs; a Lab run on this device replaces them. */
-const GATE_MIN_N = 100, GATE_MIN_PCT = 0.535, EARLY_WK = 4;   // 53.5% = break-even plus a cushion; totals are gated separately for weeks 1–4 and 5+
+   and its hit rate is still above break-even (52.4%) after taking off one standard error — a flat "53%+" let 55% on 110 games through,
+   which is well inside coin-flip noise. The college LAB_DEFAULTS are the Sep 22 2026 run; the NFL ones are 2021–25 (1,279 games) from
+   scripts/backtest_nfl.js on nflverse closing lines. A Lab run on this device replaces them. */
+const GATE_MIN_N = 100, GATE_Z = 1, EARLY_WK = 4;   // totals are gated separately for weeks 1–4 and 5+
 const LAB_DEFAULTS = {
-  nfl: { rawBuckets:[{lo:0,hi:3,n:185,W:93,L:92,P:0,pct:.503},{lo:3,hi:6,n:166,W:89,L:77,P:0,pct:.536},{lo:6,hi:10,n:110,W:61,L:49,P:0,pct:.555},{lo:10,hi:99,n:68,W:29,L:39,P:0,pct:.426}],
-         totBuckets:[{lo:0,hi:2,n:242,W:124,L:118,P:0,pct:.512},{lo:2,hi:4,n:154,W:80,L:74,P:0,pct:.519},{lo:4,hi:7,n:87,W:47,L:40,P:0,pct:.540},{lo:7,hi:99,n:20,W:12,L:8,P:0,pct:.600}],
-         angles:[{id:"bigFav",n:50,W:29,L:21,P:0,pct:.58},{id:"divDog",n:190,W:103,L:87,P:0,pct:.542},{id:"homeDog",n:219,W:105,L:114,P:0,pct:.479},{id:"earlyOver",n:4,W:3,L:1,P:0,pct:.75},{id:"lateOver",n:11,W:5,L:6,P:0,pct:.455},{id:"bigUnder",n:5,W:4,L:1,P:0,pct:.8}] },
+  nfl: { rawBuckets:[{lo:0,hi:3,n:549,W:241,L:294,P:14,pct:.450},{lo:3,hi:6,n:369,W:174,L:184,P:11,pct:.486},{lo:6,hi:10,n:257,W:122,L:129,P:6,pct:.486},{lo:10,hi:99,n:104,W:47,L:55,P:2,pct:.461}],
+         totBuckets:[{lo:0,hi:2,n:603,W:313,L:286,P:4,pct:.523},{lo:2,hi:4,n:373,W:181,L:187,P:5,pct:.492},{lo:4,hi:7,n:239,W:118,L:120,P:1,pct:.496},{lo:7,hi:99,n:64,W:27,L:36,P:1,pct:.429}],
+         totEarly:[{lo:0,hi:7,n:224,W:110,L:113,P:1,pct:.493},{lo:7,hi:99,n:16,W:7,L:9,P:0,pct:.438}], totLate:[{lo:0,hi:7,n:991,W:502,L:480,P:9,pct:.511},{lo:7,hi:99,n:48,W:20,L:27,P:1,pct:.426}],
+         angles:[{id:"bigFav",n:167,W:85,L:75,P:7,pct:.531},{id:"divDog",n:453,W:236,L:208,P:9,pct:.532},{id:"homeDog",n:513,W:251,L:249,P:13,pct:.502},{id:"earlyOver",n:5,W:2,L:3,P:0,pct:.40},{id:"lateOver",n:38,W:13,L:24,P:1,pct:.351},{id:"bigUnder",n:21,W:12,L:9,P:0,pct:.571}] },
   cfb: { rawBuckets:[{lo:0,hi:3,n:636,W:320,L:309,P:7,pct:.509},{lo:3,hi:6,n:560,W:274,L:282,P:4,pct:.493},{lo:6,hi:10,n:458,W:213,L:239,P:6,pct:.471},{lo:10,hi:99,n:274,W:145,L:129,P:0,pct:.529}],
          totBuckets:[{lo:0,hi:2,n:386,W:201,L:184,P:1,pct:.522},{lo:2,hi:4,n:352,W:177,L:174,P:1,pct:.504},{lo:4,hi:7,n:470,W:245,L:224,P:1,pct:.522},{lo:7,hi:99,n:668,W:363,L:301,P:4,pct:.547}],
          totEarly:[{lo:0,hi:7,n:300,W:150,L:150,P:0,pct:.50},{lo:7,hi:99,n:132,W:81,L:51,P:0,pct:.614}], totLate:[{lo:0,hi:7,n:900,W:450,L:450,P:0,pct:.50},{lo:7,hi:99,n:536,W:282,L:250,P:4,pct:.530}],
@@ -674,7 +677,8 @@ const ANGLES = [                                     // situational angles the L
 ];
 const rowFor = (g, e, t) => ({g, wk:g.week, spread:e.spread, div: NFL && isDivGame(g), totModel: t ? t.model : null, ou: g.ou});
 const labSummary = () => (typeof labResults !== "undefined" && labResults?.all?.market) || LAB_DEFAULTS[LG.id] || null;
-const gateOk = b => !!b && b.n >= GATE_MIN_N && b.pct != null && b.pct >= GATE_MIN_PCT;
+const gateLow = b => { const n = (b?.W ?? 0) + (b?.L ?? 0); if(!n || b.pct == null) return null; return b.pct - GATE_Z*Math.sqrt(b.pct*(1 - b.pct)/n); };   // hit rate minus one standard error
+const gateOk = b => !!b && b.n >= GATE_MIN_N && gateLow(b) != null && gateLow(b) >= BREAK_EVEN;
 function gateSide(rawEdge){ const S = labSummary(); if(!S || rawEdge == null) return {ok:false}; const b = S.rawBuckets.find(b => Math.abs(rawEdge) >= b.lo && Math.abs(rawEdge) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
 function gateTotal(diff, wk){ const S = labSummary(); if(!S || diff == null) return {ok:false};
   const list = (wk != null && wk <= EARLY_WK ? S.totEarly : S.totLate) || S.totBuckets;   // early-season totals behave differently, so they're judged separately
@@ -810,6 +814,12 @@ function clvOf(b){                                  // closing-line value in poi
   const close = b.side===b.home ? b.closing : -b.closing;   // the closing spread from the bettor's side; b.line is already stored that way
   return b.line - close;
 }
+/* The model's own closing-line value, on every pick rather than only logged bets: the side it took the first time this device saw the game,
+   and how far the line then moved by kickoff. Positive = the market came toward the model. It needs no results, so it says whether the
+   model knows something the opening number didn't long before a W–L record can. */
+function modelClv(g){ const lk = picks[gkey(g)]; if(!lk || lk.ph0 == null || lk.sp0 == null) return null;
+  const close = g.final && g.spread != null ? g.spread : lk.sp; if(close == null) return null;
+  return lk.ph0 ? lk.sp0 - close : close - lk.sp0; }
 function renderLedger(){
   const box = document.getElementById("ledger"); if(!box) return;
   gradeBets();
@@ -904,7 +914,7 @@ function render(){
     const e = evaluate(g, w), k = gkey(g);
     if(e.fcs){ if(picks[k]){ delete picks[k]; pickDirty = true; } if(graded[k]){ delete graded[k]; gradeDirty = true; } continue; }   // FCS games no longer count
     if(!g.final && g.state !== "in" && e.pickHome != null && e.spread != null){   // still pre-kickoff: (re)freeze the pick and the line it was made against
-      const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100)}; pickDirty = true; } }
+      const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100), ph0: cur ? cur.ph0 : e.pickHome, sp0: cur ? cur.sp0 : e.spread}; pickDirty = true; } }   // ph0/sp0: the first side and line this device saw, for the model's CLV
     if(e.ats && graded[k] !== e.ats){ graded[k] = e.ats; gradeDirty = true; }
   }
   for(const g of week1) if(isFCSGame(g) && graded[gkey(g)]){ delete graded[gkey(g)]; gradeDirty = true; }   // scrub FCS grades from earlier weeks too
@@ -1118,8 +1128,13 @@ function renderSeason(){
   const byWeek = weeks.map(wk => { const r = tally(rows.filter(x => x.g.week===wk).map(x => x.e.ats)); const pl = tally(rows.filter(x => x.g.week===wk && x.play).map(x => x.e.ats)); return {wk, r, pl}; });
   let units = 0; const curve = byWeek.map(x => { units += x.pl.W*100/110 - x.pl.L; return {x:`Wk ${x.wk}`, y:+units.toFixed(2), label:`Week ${x.wk}: plays ${rec(x.pl)} · all picks ${rec(x.r)} · running ${units>=0?"+":""}${units.toFixed(1)}u`, cls: x.pl.W >= x.pl.L ? "W" : "L"}; });
   const plays = rows.filter(r => r.play), tot = rows.filter(r => r.tr), tPlays = tot.filter(r => r.tPlay);
+  const clvs = [...week1, ...week2].filter(g => !isFCSGame(g) && (g.final || g.state === "in")).map(modelClv).filter(v => v != null);
+  const clvAvg = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null, toward = clvs.filter(v => v > 0).length, away = clvs.filter(v => v < 0).length;
+  const clvHtml = clvs.length ? `<div class="ledger-stats"><span>Model CLV <b class="${clvAvg>0?"pos":clvAvg<0?"neg":""}">${clvAvg>0?"+":""}${clvAvg.toFixed(2)} pts</b> on ${clvs.length} picks</span><span>Line moved toward the model <b>${toward}</b>, away <b>${away}</b>, stayed ${clvs.length-toward-away}</span></div>
+    <p class="note">Closing-line value on every pick: the side the model took when this device first saw the game, against the line at kickoff. A positive average over 50+ picks is the fastest honest sign the model is ahead of the market; near zero means the market already knew what the model knows.</p>`
+    : `<p class="note">Model CLV (did the line move toward the model's side between the first look and kickoff?) starts counting from the games this device sees before kickoff.</p>`;
   box.innerHTML = `<h2>Season so far</h2>
-    <p>Every final with a line where both teams had a rating going in — so Week 1 is out, same as the backtest — re-scored the walk-forward way: each week predicted from only the weeks before it, at the current ${Math.round(w*100)}% stats weight and the ${PRIOR === "market" ? "market" : "league-average"} prior (locked pre-kickoff picks are used where this device saw them). Plays are picks that cleared ${Math.round(PLAY_MIN*100)}%; a 52.4% hit rate is break-even at -110.</p>
+    <p>Every final with a line where both teams had a rating going in — so Week 1 is out, same as the backtest — re-scored the walk-forward way: each week predicted from only the weeks before it, at the current ${Math.round(w*100)}% stats weight and the ${PRIOR === "market" ? "market" : "league-average"} prior (locked pre-kickoff picks are used where this device saw them). Plays are picks the Lab's evidence gate backs; a 52.4% hit rate is break-even at -110.</p>
     ${curve.length >= 2 ? lineChart(curve, {zero:true, fmt: v => (v>=0?"+":"")+v.toFixed(0)+"u", title:"Running units on plays, flat 1u each, by week"}) : ""}
     <div class="splits">
       ${split("All picks", rows)}${split("Plays only", plays)}${split("Passes", rows.filter(r => !r.play))}
@@ -1128,6 +1143,7 @@ function renderSeason(){
       ${split(NFL ? "Divisional games" : "Power 4 vs P4", rows.filter(r => P4(r.g)))}${split(NFL ? "Non-divisional" : "Everything else", rows.filter(r => !P4(r.g)))}
       ${split("Totals, all", tot, x => x.tr)}${split("Totals, plays", tPlays, x => x.tr)}
     </div>
+    ${clvHtml}
     <div class="tablewrap"><table><tr><th>Week</th><th>All picks</th><th>Plays</th><th>Hit %</th></tr>${byWeek.map(x => `<tr><td>Week ${x.wk}</td><td>${rec(x.r)}</td><td>${rec(x.pl)}</td><td>${pctW(x.pl)==null?"—":pctW(x.pl)+"%"}</td></tr>`).join("")}</table></div>
     <p class="note">Small samples swing wildly — a 12–8 split on twenty games is noise. Watch the plays-only line and the totals line over the season; the others are for spotting where the number is systematically off.</p>`;
 }
@@ -1561,7 +1577,7 @@ function renderLab(status){
   box.innerHTML = `<h2>The Lab</h2>
     <p>This model, run walk-forward over <b>${Object.values(R.games).reduce((a,b)=>a+b,0)} ${LG.tag} games</b> from ${LAB_YEARS.join(", ")} (${Object.entries(R.games).map(([y,n])=>`${y}: ${n}`).join(" · ")}), each week predicted from only the weeks before it, with the same shrinkage and no injuries or rest. Ran ${new Date(R.ran).toLocaleDateString("en-US",{month:"short",day:"numeric"})}.</p>
     <p><b>What it found.</b> ${verdict.join(" ")}</p>
-    <p><b>How this feeds the picks.</b> A side, total or angle is marked <b>PLAY</b> on the board only when its row here has ${GATE_MIN_N}+ games and covered ${Math.round(GATE_MIN_PCT*100)}%+; everything else is shown as a lean with its Lab rate. ${labResults ? "This device's own Lab run is in charge." : "Until you run the Lab here, the built-in Sep 2026 run is used."}</p>
+    <p><b>How this feeds the picks.</b> A side, total or angle is marked <b>PLAY</b> on the board only when its row here has ${GATE_MIN_N}+ games and a hit rate that stays above the 52.4% break-even even after taking off one standard error (so 55% on 110 games isn't enough; 55% on 700 is); everything else is shown as a lean with its Lab rate. ${labResults ? "This device's own Lab run is in charge." : `Until you run the Lab here, the built-in run is used (${NFL ? "2021–25 nflverse closing lines" : "Sep 2026"}).`}</p>
     <p class="note">${spTxt}</p>
     <h3 style="margin:14px 0 4px;font-size:16px">Stats weight, market prior vs average prior</h3>
     <div class="tablewrap"><table><tr><th>Weight</th><th>Miss (market prior)</th><th>ATS</th><th>Miss (average prior)</th><th>ATS</th></tr>${m.sweep.map(s => sweepRow(s, a.sweep.find(x => x.w === s.w))).join("")}</table></div>
@@ -1644,7 +1660,7 @@ async function sharePicks(recap = false){
     c.fillStyle = "#5B6778"; c.font = "500 28px Barlow, sans-serif"; c.fillText(x.game, 400, y); c.fillText(x.prob, 640, y); c.fillText(x.tot, 900, y);
     c.fillStyle = x.strong ? "#D9532B" : "#5B6778"; c.font = "700 32px 'Barlow Condensed', Impact, sans-serif"; c.fillText(x.cover, 780, y);
     if(x.res){ c.fillStyle = x.res==="✓" ? "#2E7D4F" : x.res==="✗" ? "#D9532B" : "#5B6778"; c.font = "700 30px Barlow, sans-serif"; c.fillText(x.res, 1000, y); } });
-  c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = a play the Lab backs (that size of edge has covered 53%+ over 2023–25). Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
+  c.fillStyle = "#5B6778"; c.font = "400 22px Barlow, sans-serif"; c.fillText(`Bold = a play the Lab backs (that kind of pick has beaten break-even by more than its noise). Model rates ${week1.filter(g=>g.final).length} games so far. Not betting advice.`, 48, H-36);
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
   const file = new File([blob], `${LG.file}-week${VW}${recap?"-recap":""}.png`, {type:"image/png"});
   try{
