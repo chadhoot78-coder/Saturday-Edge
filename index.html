@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.9</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.10</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -1128,6 +1128,15 @@ function renderSeason(){
   const byWeek = weeks.map(wk => { const r = tally(rows.filter(x => x.g.week===wk).map(x => x.e.ats)); const pl = tally(rows.filter(x => x.g.week===wk && x.play).map(x => x.e.ats)); return {wk, r, pl}; });
   let units = 0; const curve = byWeek.map(x => { units += x.pl.W*100/110 - x.pl.L; return {x:`Wk ${x.wk}`, y:+units.toFixed(2), label:`Week ${x.wk}: plays ${rec(x.pl)} · all picks ${rec(x.r)} · running ${units>=0?"+":""}${units.toFixed(1)}u`, cls: x.pl.W >= x.pl.L ? "W" : "L"}; });
   const plays = rows.filter(r => r.play), tot = rows.filter(r => r.tr), tPlays = tot.filter(r => r.tPlay);
+  /* market vs the model on margin error, this season: the only fair head-to-head (the market can't pick against itself) */
+  const miss = (list, f) => { const v = list.filter(r => r.e.market != null).map(r => (f(r) - (r.g.hs - r.g.as))**2); return v.length ? Math.sqrt(v.reduce((a,b)=>a+b,0)/v.length) : null; };
+  const fMkt = r => r.e.market, fBlend = r => r.e.blend, fStats = r => r.e.modelLine;
+  const autoW = learn.ready ? Math.round(learn.auto*100)/100 : null, fAuto = r => autoW*r.e.modelLine + (1-autoW)*r.e.market;
+  const cols = [["Market alone", fMkt], [`Blend ${Math.round(w*100)}%`, fBlend], ...(autoW != null && Math.abs(autoW - w) >= .005 ? [[`Auto ${Math.round(autoW*100)}%`, fAuto]] : []), ["Stats only", fStats]];
+  const missAll = cols.map(([label, f]) => ({label, v: miss(rows, f)})), bestMiss = Math.min(...missAll.map(x => x.v ?? 99));
+  const missHtml = rows.length ? `<h3 style="margin:14px 0 4px;font-size:16px">Market vs the model on margin, this season</h3>
+    <div class="splits">${missAll.map(x => `<div class="split"><small>${x.label}</small><b class="${x.v != null && x.v <= bestMiss + 1e-9 ? "pos" : ""}">${x.v == null ? "—" : x.v.toFixed(2)}</b><span>pts</span></div>`).join("")}</div>
+    <p class="note">Average miss on the final margin (root-mean-square, lower is better) over the same ${rows.length} games as the records above. ${missAll[1].v != null && missAll[0].v != null ? (missAll[1].v < missAll[0].v - .05 ? `The blend is ahead of the market by ${(missAll[0].v - missAll[1].v).toFixed(2)} pts so far.` : missAll[1].v > missAll[0].v + .05 ? `The market alone is ahead of the blend by ${(missAll[1].v - missAll[0].v).toFixed(2)} pts so far — the stats are adding noise, not information.` : `The blend and the market are within a few hundredths of each other — the stats aren't moving the number much yet.`) : ""} Under ~60 games this bounces; the full weight-by-weight table is in <a href="#learn">What the model has learned</a>.</p>` : "";
   const clvs = [...week1, ...week2].filter(g => !isFCSGame(g) && (g.final || g.state === "in")).map(modelClv).filter(v => v != null);
   const clvAvg = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null, toward = clvs.filter(v => v > 0).length, away = clvs.filter(v => v < 0).length;
   const clvHtml = clvs.length ? `<div class="ledger-stats"><span>Model CLV <b class="${clvAvg>0?"pos":clvAvg<0?"neg":""}">${clvAvg>0?"+":""}${clvAvg.toFixed(2)} pts</b> on ${clvs.length} picks</span><span>Line moved toward the model <b>${toward}</b>, away <b>${away}</b>, stayed ${clvs.length-toward-away}</span></div>
@@ -1143,9 +1152,11 @@ function renderSeason(){
       ${split(NFL ? "Divisional games" : "Power 4 vs P4", rows.filter(r => P4(r.g)))}${split(NFL ? "Non-divisional" : "Everything else", rows.filter(r => !P4(r.g)))}
       ${split("Totals, all", tot, x => x.tr)}${split("Totals, plays", tPlays, x => x.tr)}
     </div>
+    ${missHtml}
     ${clvHtml}
-    <div class="tablewrap"><table><tr><th>Week</th><th>All picks</th><th>Plays</th><th>Hit %</th></tr>${byWeek.map(x => `<tr><td>Week ${x.wk}</td><td>${rec(x.r)}</td><td>${rec(x.pl)}</td><td>${pctW(x.pl)==null?"—":pctW(x.pl)+"%"}</td></tr>`).join("")}</table></div>
-    <p class="note">Small samples swing wildly — a 12–8 split on twenty games is noise. Watch the plays-only line and the totals line over the season; the others are for spotting where the number is systematically off.</p>`;
+    <div class="tablewrap"><table><tr><th>Week</th><th>All picks</th><th>Plays</th><th>Hit %</th><th>Market miss</th><th>Blend miss</th></tr>${byWeek.map(x => { const wr = rows.filter(r => r.g.week===x.wk), mm = miss(wr, fMkt), mb = miss(wr, fBlend);
+      return `<tr><td>Week ${x.wk}</td><td>${rec(x.r)}</td><td>${rec(x.pl)}</td><td>${pctW(x.pl)==null?"—":pctW(x.pl)+"%"}</td><td class="${mm!=null&&mb!=null&&mm<mb-1e-9?"pos":""}">${mm==null?"—":mm.toFixed(2)}</td><td class="${mm!=null&&mb!=null&&mb<mm-1e-9?"pos":""}">${mb==null?"—":mb.toFixed(2)}</td></tr>`; }).join("")}</table></div>
+    <p class="note">Small samples swing wildly — a 12–8 split on twenty games is noise. Watch the plays-only line and the totals line over the season; the others are for spotting where the number is systematically off. Miss columns: whichever of the market or the blend was closer to the final margins that week is green.</p>`;
 }
 function renderChips(all = week2){
   const box = document.getElementById("chips"); if(!box) return;
