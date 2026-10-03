@@ -890,7 +890,7 @@ const payoutTable = (g, pHome, pickHome, spread, blend) => { const st = stake();
   const tag = v => v==null ? "" : v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : "";
   const pc = spread==null || pickHome==null ? null : (pickHome ? coverP(blendFor(), spread) : 1 - coverP(blendFor(), spread));
   const sp = spread==null || pickHome==null ? "" : `<tr><td>Spread pick ${pickHome?g.home:g.away} ${(pickHome?spread:-spread)>0?"+":""}${(pickHome?spread:-spread).toFixed(1)} (-110)${ev(pc, -110)}</td><td>${money(st*100/110)}</td><td>${pct(BREAK_EVEN)}</td><td>${pc==null?"—":pct(pc)}</td></tr>`;
-  const t = evalTotal(g, +document.getElementById("w").value/100);
+  const t = evalTotal(g, weightNow());
   const be = pct(100/210);                                                   // -110 break-even
   return `<table><tr><th>$${st} bet · profit if it hits</th><th>Profit</th><th>Fair</th><th>Model</th></tr>
     ${sp}
@@ -899,9 +899,10 @@ const payoutTable = (g, pHome, pickHome, spread, blend) => { const st = stake();
     ${g.ou!=null?`<tr><td>Over ${g.ou} (-110)${tagT(g, true)}</td><td>${money(st*100/110)}</td><td>${be}</td><td>${t?pct(t.pOver):"—"}</td></tr>
     <tr><td>Under ${g.ou} (-110)${tagT(g, false)}</td><td>${money(st*100/110)}</td><td>${be}</td><td>${t?pct(1-t.pOver):"—"}</td></tr>`:""}</table>
   <div class="note">Fair = the book's price with its vig removed${hold?` (hold ${((hold-1)*100).toFixed(1)}%)`:""}. Model = this app's estimate. Value tags fire when Model beats Fair by 3+ points; EV is dollars expected per bet at the actual price.</div>`; };
-const tagT = (g, over) => { const t = evalTotal(g, +document.getElementById("w").value/100); if(!t) return "";
+const tagT = (g, over) => { const t = evalTotal(g, weightNow()); if(!t) return "";
   const p = over ? t.pOver : 1-t.pOver, v = p - BREAK_EVEN;         // vs. the -110 break-even (52.4%)
   return v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : ""; };
+const weightNow = () => { const v = weightNow(); if(Number.isFinite(v)) return v; document.getElementById("w").value = 35; return 0.35; };   // v4.11: never let a NaN weight reach the picks
 const spreadText = (g,s) => s==null ? "no line" : s<0 ? `${g.home} ${s.toFixed(1)}` : s>0 ? `${g.away} ${(-s).toFixed(1)}` : "pick";
 
 const viewWeek = () => VIEW ?? CUR;
@@ -909,7 +910,7 @@ function slateFor(wk){ if(wk === CUR) return week2; if(wk < CUR) return week1.fi
 const teamBlock = (t, side, right) => `<div class="team ${right?"right":""}">${names[t]?.logo ? `<img class="logo" src="${names[t].logo}" alt="" loading="lazy" onerror="this.remove()">` : ""}<div>${t}<small>${nameOf(t)} · ${side}</small></div></div>`;
 const countdown = ts => { const d = ts - Date.now(); if(d <= 0 || d > 36e5*30) return ""; const h = Math.floor(d/36e5), m = Math.floor((d%36e5)/6e4); return h ? `${h}h ${m}m` : `${m}m`; };
 function render(){
-  const w = +document.getElementById("w").value/100, VW = viewWeek(), past = VW < CUR, fut = VW > CUR;
+  const w = weightNow(), VW = viewWeek(), past = VW < CUR, fut = VW > CUR;
   document.getElementById("hint").textContent = `Weighting: ${Math.round(w*100)}% season stats (through Week ${Math.max(1,VW-1)}) / ${Math.round((1-w)*100)}% market line. Gold = away, green = home, dark tick = the betting line. Tap a game's header for the numbers.`;
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
 
@@ -1120,7 +1121,7 @@ function tapeRows(g, H){                             // the "why" behind the num
 /* ---------- season view: where the model has actually had an edge ---------- */
 function renderSeason(){
   const box = document.getElementById("season"); if(!box) return;
-  const w = +document.getElementById("w").value/100;
+  const w = weightNow();
   const games = [...week1, ...week2].filter(g => g.final && g.spread != null && !isFCSGame(g));
   if(!games.length){ box.innerHTML = `<h2>Season so far</h2><p>Records by week and by situation appear once games have gone final.</p>`; return; }
   const rows = games.map(g => { const e = evaluate(g, w); const t = evalTotal(g, w); let tr = null;
@@ -1391,7 +1392,7 @@ function lineAlerts(){
   const items = [], pings = [];
   for(const g of week2){ const k = gkey(g); const was = lastSeen[k];
     if(was != null && g.spread != null && Math.abs(g.spread - was) >= 0.5){
-      const e = evaluate(g, +document.getElementById("w").value/100), toward = g.spread < was ? g.home : g.away;
+      const e = evaluate(g, weightNow()), toward = g.spread < was ? g.home : g.away;
       const withYou = e.pickHome != null && ((g.spread < was) === e.pickHome);
       items.push(`<b>${g.away} @ ${g.home}</b>: ${spreadText(g,was)} → ${spreadText(g,g.spread)}${crosses(was,g.spread)?" <b>(crossed a key number)</b>":""} — money on ${toward}${e.pickHome!=null?`, ${withYou?"with":"against"} your pick`:""}`);
       const mine = bets.some(b => b.key === k && !b.result) || e.play;          // only games you care about get a notification
@@ -1643,6 +1644,7 @@ async function init(){
 }
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x===b));
+  if(b.dataset.w == null || !Number.isFinite(+b.dataset.w)) return;   // v4.11: a .seg button with no weight (league/view toggles) must not blank the slider
   document.getElementById("w").value = b.dataset.w; document.getElementById("w").dataset.auto = b.id==="autoBtn" ? "1" : "0"; render();
 }));
 document.getElementById("refresh").addEventListener("click", init);
@@ -1650,7 +1652,7 @@ document.getElementById("share").addEventListener("click", sharePicks);
 document.getElementById("best").addEventListener("click", ev => { bestMode = !bestMode; ev.target.setAttribute("aria-pressed", bestMode); ev.target.classList.toggle("primary", bestMode); document.getElementById("games").classList.toggle("best", bestMode); render(); });
 document.getElementById("recap").addEventListener("click", () => sharePicks(true));
 async function sharePicks(recap = false){
-  const w = +document.getElementById("w").value/100, VW = viewWeek();
+  const w = weightNow(), VW = viewWeek();
   const rows = slateFor(viewWeek()).filter(inFilter).map(g => ({g, e:evaluate(g,w)})).filter(x => x.e.market!=null && x.e.pickHome!=null).sort((a,b) => Math.abs(b.e.edge) - Math.abs(a.e.edge));
   const line = ({g,e}) => { const side = e.pickHome ? g.home : g.away, num = e.pickHome ? e.spread : -e.spread;
     return { pick:`${side} ${num>0?"+":""}${num.toFixed(1)}`, game:`${g.away} @ ${g.home}`, edge:Math.abs(e.edge).toFixed(1),
