@@ -902,7 +902,7 @@ const payoutTable = (g, pHome, pickHome, spread, blend) => { const st = stake();
 const tagT = (g, over) => { const t = evalTotal(g, weightNow()); if(!t) return "";
   const p = over ? t.pOver : 1-t.pOver, v = p - BREAK_EVEN;         // vs. the -110 break-even (52.4%)
   return v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : ""; };
-const weightNow = () => { const v = weightNow(); if(Number.isFinite(v)) return v; document.getElementById("w").value = 35; return 0.35; };   // v4.11: never let a NaN weight reach the picks
+const weightNow = () => { const v = +document.getElementById("w").value/100; if(Number.isFinite(v)) return v; document.getElementById("w").value = 35; return 0.35; };   // v4.11: never let a NaN weight reach the picks
 const spreadText = (g,s) => s==null ? "no line" : s<0 ? `${g.home} ${s.toFixed(1)}` : s>0 ? `${g.away} ${(-s).toFixed(1)}` : "pick";
 
 const viewWeek = () => VIEW ?? CUR;
