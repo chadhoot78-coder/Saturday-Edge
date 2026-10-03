@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.10</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.11</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -676,7 +676,12 @@ const ANGLES = [                                     // situational angles the L
   {id:"bigUnder", label:"Projection 7+ low", type:"total", applies:x => x.ou != null && x.totModel != null && x.ou - x.totModel >= 7, over:x => false},
 ];
 const rowFor = (g, e, t) => ({g, wk:g.week, spread:e.spread, div: NFL && isDivGame(g), totModel: t ? t.model : null, ou: g.ou});
-const labSummary = () => (typeof labResults !== "undefined" && labResults?.all?.market) || LAB_DEFAULTS[LG.id] || null;
+const labN = S => S?.rawBuckets ? S.rawBuckets.reduce((a,b) => a + (b.n||0), 0) : 0;
+/* v4.11: the gate trusts the bigger sample. A Lab run on this device (three seasons from ESPN archives) only replaces the baked-in
+   defaults when it covers at least as many games; the NFL defaults are five seasons, and on them the 3–10 point disagreement buckets
+   that looked like an edge over three seasons (53–55%) come back to 48.6%. The Lab panel still shows the device run in full. */
+const labSummary = () => { const dev = (typeof labResults !== "undefined" && labResults?.all?.market) || null, def = LAB_DEFAULTS[LG.id] || null;
+  if(dev && def) return labN(dev) >= labN(def) ? dev : def; return dev || def; };
 const gateLow = b => { const n = (b?.W ?? 0) + (b?.L ?? 0); if(!n || b.pct == null) return null; return b.pct - GATE_Z*Math.sqrt(b.pct*(1 - b.pct)/n); };   // hit rate minus one standard error
 const gateOk = b => !!b && b.n >= GATE_MIN_N && gateLow(b) != null && gateLow(b) >= BREAK_EVEN;
 function gateSide(rawEdge){ const S = labSummary(); if(!S || rawEdge == null) return {ok:false}; const b = S.rawBuckets.find(b => Math.abs(rawEdge) >= b.lo && Math.abs(rawEdge) < b.hi); return b ? {ok: gateOk(b), n:b.n, pct:b.pct, lo:b.lo, hi:b.hi} : {ok:false}; }
@@ -917,6 +922,9 @@ function render(){
       const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100), ph0: cur ? cur.ph0 : e.pickHome, sp0: cur ? cur.sp0 : e.spread}; pickDirty = true; } }   // ph0/sp0: the first side and line this device saw, for the model's CLV
     if(e.ats && graded[k] !== e.ats){ graded[k] = e.ats; gradeDirty = true; }
   }
+  for(const g of week1){                           // v4.11: earlier weeks this device locked a pick for but never saw go final (grades walk-forward, same as Season so far)
+    if(!g.final) continue; const k = gkey(g); if(!picks[k] || graded[k] || isFCSGame(g)) continue;
+    const e = evaluate(g, w); if(e.ats){ graded[k] = e.ats; gradeDirty = true; } }
   for(const g of week1) if(isFCSGame(g) && graded[gkey(g)]){ delete graded[gkey(g)]; gradeDirty = true; }   // scrub FCS grades from earlier weeks too
   if(pickDirty) store.set("picks", picks); if(gradeDirty) store.set("graded", graded);
   const wrap = document.getElementById("games"); wrap.innerHTML = "";
