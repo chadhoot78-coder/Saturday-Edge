@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.11</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.12</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -275,7 +275,7 @@
     <h2>How the number is built</h2>
     <p><b>Team rating.</b> Every game played this season counts: point margin (home-field removed), yards-per-play margin, and turnover margin, adjusted for who the opponent was. Ratings are shrunk toward average when the sample is small — 70% after one game, about 40% after four, 20% after ten — so the stats earn trust as the season goes.</p>
     <p><b>The prior.</b> A rating has to start somewhere before a team has played. <b>Prior: Market</b> (the default since v4.1) starts every team at the rating the betting lines imply — solved across all the games on the board, the same way the results model adjusts for opponents — so with no evidence the model line simply <i>is</i> the market line, and the stats only move it where they disagree. <b>Prior: Average</b> is the original behaviour: every team starts at zero, which early in the season makes the model line shorter than the spread in almost every game and leans the picks toward the underdog. The button flips between them instantly, the backtest re-runs, and past grades stay as they were recorded.</p>
-    <p><b>Rest &amp; injuries.</b> The model line gets ±0.3 points per day of rest advantage (short weeks, byes), and a penalty for players listed Out or Doubtful on ESPN's injury report — about 4 points for a quarterback, half a point for other starters, capped at 6. These only touch the stats side; the market already prices them. International games at neutral sites get no home-field points.</p>
+    <p><b>QB situations.</b> When a quarterback is on either injury report and the line has moved 3+ points since it opened, the side lean is withheld: the market is pricing who starts and how bad the drop-off is, which the ratings can't see. <b>Rest &amp; injuries.</b> The model line gets ±0.3 points per day of rest advantage (short weeks, byes), and a penalty for players listed Out or Doubtful on ESPN's injury report — about 4 points for a quarterback, half a point for other starters, capped at 6. These only touch the stats side; the market already prices them. International games at neutral sites get no home-field points.</p>
     <p><b>Weather.</b> For outdoor games in the next two weeks, the forecast at the stadium for kickoff hour comes from Open-Meteo (free, no key). Wind above 12 mph trims the projected total by a quarter point per mph (up to 6), a likely rain trims it 2 more, and a hard freeze 1.5. It never touches the spread — the market already prices weather into the side better than a hobby model can. Domes and retractables ESPN marks indoor are skipped.</p>
     <p><b>Bet log &amp; Kelly.</b> Log a play to track it. Stakes suggest half-Kelly from the model's probability and the price against your bankroll — half because the model's probabilities are noisier than it thinks — and are capped at 5% of the bankroll no matter what the number says, because a model that's wrong about a game is usually most wrong when it's most confident. Closing-line value is recorded when the game kicks off. Until then the log shows how far the line has moved from your number; once the game is on it shows whether the bet is covering and by how much, live.</p>
     <p><b>Totals.</b> Each team's points scored and allowed so far, adjusted for the opponents they faced and shrunk toward the league average of 22.5 per team on the same trust curve as the ratings, give a projected total. It blends with the market total at the same weight as the spread, and the over/under probability comes from the same 13.5-point curve. Break-even at -110 is 52.4%, so a value tag on a total means the model clears that by 3+ points.</p>
@@ -462,6 +462,15 @@ function margDist(mu){                              // -> Map(int -> p) for home
 const pGreater = (mu, x) => { let p = 0; for(const [m,q] of margDist(mu)) if(m > x) p += q; return p; };
 const pEqual   = (mu, x) => margDist(mu).get(Math.round(x)) ?? 0;
 const winP   = mu => { const t = pEqual(mu, 0); return pGreater(mu, 0) / (1 - t); };                 // ties excluded
+/* v4.12: NFL totals bunch the way margins do — 41, 44, 47, 51 are the common landing spots (two or three scoring
+   combinations each), 48 and 50 are rare. Same construction as margDist, on the total's own key numbers. */
+const TKEY = {37:1.2, 40:1.1, 41:1.45, 43:1.15, 44:1.4, 45:1.1, 47:1.4, 48:.8, 49:1.05, 50:.85, 51:1.3, 52:.85, 54:1.15, 55:1.05, 58:1.1};
+const tdistCache = {};
+function totDist(mu){ const k = mu.toFixed(1); if(tdistCache[k]) return tdistCache[k];
+  const pmf = new Map(); let tot = 0;
+  for(let t = 0; t <= 120; t++){ const z = (t - mu)/SD; const p = Math.exp(-z*z/2) * (NFL ? (TKEY[t] ?? 1) : 1); pmf.set(t, p); tot += p; }
+  for(const [t,p] of pmf) pmf.set(t, p/tot); return tdistCache[k] = pmf; }
+const overP = (mu, line) => { let over = 0, push = 0; for(const [t,q] of totDist(mu)){ if(t > line) over += q; else if(t === line) push += q; } return over / (1 - push); };
 const coverP = (mu, spread) => { const x = -spread; const push = Number.isInteger(x) ? pEqual(mu, x) : 0; return pGreater(mu, x) / (1 - push); };  // P(home covers | no push)
 const Phi = z => { const t = 1/(1+0.2316419*Math.abs(z)); const d = 0.3989423*Math.exp(-z*z/2);
   const p = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
@@ -632,7 +641,7 @@ const wxChip = g => { const w = g.wx; if(!w || g.final || g.state==="in") return
   return `<span class="wx ${a.bad?"bad":""}" title="${w.indoor?"indoor":"forecast at kickoff, Open-Meteo"}${a.pts?` · total −${a.pts.toFixed(1)}`:""}">${bits.join(" · ")}</span>`; };
 function evalTotal(g, w){
   if(g.ou == null || isFCSGame(g)) return null;      // no total play against an FCS prior either
-  const wx = wxAdj(g), model = projectTotal(g) - wx.pts, blend = w*model + (1-w)*g.ou, pOver = Phi((blend - g.ou)/SD);
+  const wx = wxAdj(g), model = projectTotal(g) - wx.pts, blend = w*model + (1-w)*g.ou, pOver = overP(blend, g.ou);
   const gate = gateTotal(model - g.ou, g.week);
   return {model, blend, pOver, edge: blend - g.ou, pick: blend >= g.ou ? "Over" : "Under", wx, gate, play: gate.ok};
 }
@@ -643,6 +652,7 @@ function restAdj(g){                                 // + favors home. ~0.3 pts 
   const rh = Math.round((g.ts-h)/864e5), ra = Math.round((g.ts-a)/864e5), d = Math.max(-5, Math.min(5, rh - ra));
   return {pts: 0.3*d, text: d ? `${d>0?g.home:g.away} +${Math.abs(d)} days rest` : ""};
 }
+const qbFlag = t => (injuries[t] || []).find(i => i.pos === "QB" && /out|doubtful|questionable|ir\b/i.test(i.status)) || null;
 function injAdj(t){                                  // penalty in points for listed Out/Doubtful players; QB dominates
   const list = injuries[t] || []; let pts = 0; const notes = [];
   for(const i of list){ const out = /out|doubtful|ir\b/i.test(i.status), q = /questionable/i.test(i.status);
@@ -670,14 +680,14 @@ const LAB_DEFAULTS = {
 const ANGLES = [                                     // situational angles the Lab scores on the same seasons; x is a lab/live row (see rowFor)
   {id:"bigFav", label:"Favorite of 10+", type:"side", applies:x => x.spread != null && Math.abs(x.spread) >= 10, pickHome:x => x.spread < 0},
   {id:"divDog", label:"Divisional underdog", type:"side", nfl:true, applies:x => x.div && x.spread != null && x.spread !== 0, pickHome:x => x.spread > 0},
-  {id:"homeDog", label:"Home underdog", type:"side", applies:x => x.spread != null && x.spread > 0, pickHome:x => true},
+  {id:"homeDog", label:"Home underdog", type:"side", applies:x => x.spread != null && x.spread > 0 && !x.g.neutral, pickHome:x => true},
   {id:"earlyOver", label:"Early-season over, projection 7+ high", type:"total", applies:x => x.wk <= 4 && x.ou != null && x.totModel != null && x.totModel - x.ou >= 7, over:x => true},
   {id:"lateOver", label:"Projection 7+ high, week 5 on", type:"total", applies:x => x.wk >= 5 && x.ou != null && x.totModel != null && x.totModel - x.ou >= 7, over:x => true},
   {id:"bigUnder", label:"Projection 7+ low", type:"total", applies:x => x.ou != null && x.totModel != null && x.ou - x.totModel >= 7, over:x => false},
 ];
 const rowFor = (g, e, t) => ({g, wk:g.week, spread:e.spread, div: NFL && isDivGame(g), totModel: t ? t.model : null, ou: g.ou});
 const labN = S => S?.rawBuckets ? S.rawBuckets.reduce((a,b) => a + (b.n||0), 0) : 0;
-/* v4.11: the gate trusts the bigger sample. A Lab run on this device (three seasons from ESPN archives) only replaces the baked-in
+/* v4.12: the gate trusts the bigger sample. A Lab run on this device (three seasons from ESPN archives) only replaces the baked-in
    defaults when it covers at least as many games; the NFL defaults are five seasons, and on them the 3–10 point disagreement buckets
    that looked like an edge over three seasons (53–55%) come back to 48.6%. The Lab panel still shows the device run in full. */
 const labSummary = () => { const dev = (typeof labResults !== "undefined" && labResults?.all?.market) || null, def = LAB_DEFAULTS[LG.id] || null;
@@ -710,8 +720,13 @@ function evaluate(g, w){
   const pCoverHome = spread == null ? null : coverP(blend, spread);
   const pCover = pickHome == null ? null : (pickHome ? pCoverHome : 1 - pCoverHome);   // chance the pick covers
   const evPer100 = pCover == null ? null : pCover*100*100/110 - (1-pCover)*100;        // $ EV per $100 at -110
-  const gate = (fcs || market == null) ? {ok:false} : gateSide(modelLine - market);
-  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, fcs, locked: !!lk, hasRating: g.home in R && g.away in R, gate, play: gate.ok};
+  /* v4.12: a line that has moved 3+ points while a quarterback is on either injury report is a game the market has
+     information the model doesn't (who starts, how bad the drop-off is). The ratings can't price that, so the side
+     lean is suppressed and the card says why. Totals and the moneyline table still show. */
+  const qb = Math.abs(move) >= 3 && !g.final && g.state !== "in" ? (qbFlag(g.home) || qbFlag(g.away)) : null;
+  const qbTeam = qb ? (qbFlag(g.home) ? g.home : g.away) : null;
+  const gate = (fcs || market == null || qb) ? {ok:false, qb:!!qb} : gateSide(modelLine - market);
+  return {modelLine, spread, market, blend, pHome, pMkt, edge, pickHome, ats, move, pCover, evPer100, rest, ih, ia, fcs, qb, qbTeam, locked: !!lk, hasRating: g.home in R && g.away in R, gate, play: gate.ok};
 }
 
 /* ---------- render ---------- */
@@ -902,7 +917,7 @@ const payoutTable = (g, pHome, pickHome, spread, blend) => { const st = stake();
 const tagT = (g, over) => { const t = evalTotal(g, weightNow()); if(!t) return "";
   const p = over ? t.pOver : 1-t.pOver, v = p - BREAK_EVEN;         // vs. the -110 break-even (52.4%)
   return v >= .03 ? ` <span class="grade W">+${Math.round(v*100)}% value</span>` : v <= -.03 ? ` <span class="grade L">${Math.round(v*100)}%</span>` : ""; };
-const weightNow = () => { const v = +document.getElementById("w").value/100; if(Number.isFinite(v)) return v; document.getElementById("w").value = 35; return 0.35; };   // v4.11: never let a NaN weight reach the picks
+const weightNow = () => { const v = +document.getElementById("w").value/100; if(Number.isFinite(v)) return v; document.getElementById("w").value = 35; return 0.35; };   // v4.12: never let a NaN weight reach the picks
 const spreadText = (g,s) => s==null ? "no line" : s<0 ? `${g.home} ${s.toFixed(1)}` : s>0 ? `${g.away} ${(-s).toFixed(1)}` : "pick";
 
 const viewWeek = () => VIEW ?? CUR;
@@ -923,7 +938,7 @@ function render(){
       const cur = picks[k]; if(!cur || cur.ph !== e.pickHome || cur.sp !== e.spread){ picks[k] = {ph: e.pickHome, sp: e.spread, w: Math.round(w*100), ph0: cur ? cur.ph0 : e.pickHome, sp0: cur ? cur.sp0 : e.spread}; pickDirty = true; } }   // ph0/sp0: the first side and line this device saw, for the model's CLV
     if(e.ats && graded[k] !== e.ats){ graded[k] = e.ats; gradeDirty = true; }
   }
-  for(const g of week1){                           // v4.11: earlier weeks this device locked a pick for but never saw go final (grades walk-forward, same as Season so far)
+  for(const g of week1){                           // v4.12: earlier weeks this device locked a pick for but never saw go final (grades walk-forward, same as Season so far)
     if(!g.final) continue; const k = gkey(g); if(!picks[k] || graded[k] || isFCSGame(g)) continue;
     const e = evaluate(g, w); if(e.ats){ graded[k] = e.ats; gradeDirty = true; } }
   for(const g of week1) if(isFCSGame(g) && graded[gkey(g)]){ delete graded[gkey(g)]; gradeDirty = true; }   // scrub FCS grades from earlier weeks too
@@ -998,7 +1013,8 @@ function render(){
         grade = ` <span class="grade ${ok==null?"":ok?"W":"L"}">${ok==null?"ON THE NUMBER":ok?"COVERING":"NOT COVERING"} by ${Math.abs(cover).toFixed(1)}</span>`; }
       const canLog = !g.final && g.state!=="in" && !past;
       const gateTxt = strong ? ` <span class="grade W" title="Lab: picks this far off the line covered ${labPct(e.gate.n, e.gate.pct)}">PLAY · Lab ${Math.round(e.gate.pct*100)}%</span>` : ` <span class="lean-note" title="${e.gate.n ? `Lab: picks ${e.gate.lo}–${e.gate.hi===99?"":e.gate.hi} pts off the line covered ${labPct(e.gate.n, e.gate.pct)} — not enough to bet` : "no Lab record for this size of disagreement"}">(lean${e.gate.n ? ` · Lab ${Math.round(e.gate.pct*100)}%` : ""})</span>`;
-      lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${gateTxt}${!g.final&&g.state!=="in"?bookTxt(bestLine(g,"spread",side)):""}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
+      if(e.qb) lean = `<div class="lean none"><span class="grade L">QB situation</span> ${e.qbTeam}: ${e.qb.name} ${e.qb.status} and the line has moved ${Math.abs(e.move).toFixed(1)} pts since it opened — the market knows who's playing; the model doesn't. No side lean.${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log anyway</button>`:""}</div>`;
+      else lean = `<div class="lean ${strong?"":"none"}">ATS: ${side} ${num>0?"+":""}${num.toFixed(1)} · covers ${pct(e.pCover)} · EV ${e.evPer100>=0?"+":"−"}$${Math.abs(e.evPer100).toFixed(1)} per $100${gateTxt}${!g.final&&g.state!=="in"?bookTxt(bestLine(g,"spread",side)):""}${strong&&!past?kellyText(e.pCover,-110):""}${grade}${canLog?` <button class="mini" data-log="spread" data-side="${side}" data-line="${num}" data-p="${e.pCover}">Log</button>`:""}</div>`;
     }
     const t = evalTotal(g, w);
     if(t){ const pP = t.pick==="Over" ? t.pOver : 1-t.pOver; const tStrong = t.play;
@@ -1644,7 +1660,7 @@ async function init(){
 }
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x===b));
-  if(b.dataset.w == null || !Number.isFinite(+b.dataset.w)) return;   // v4.11: a .seg button with no weight (league/view toggles) must not blank the slider
+  if(b.dataset.w == null || !Number.isFinite(+b.dataset.w)) return;   // v4.12: a .seg button with no weight (league/view toggles) must not blank the slider
   document.getElementById("w").value = b.dataset.w; document.getElementById("w").dataset.auto = b.id==="autoBtn" ? "1" : "0"; render();
 }));
 document.getElementById("refresh").addEventListener("click", init);
