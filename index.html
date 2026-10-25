@@ -248,7 +248,7 @@
   <section class="method" id="ledger"></section>
   <section class="method" id="movers"></section>
 
-  <p class="disclaimer"><span style="float:right;opacity:.6">v4.13</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
+  <p class="disclaimer"><span style="float:right;opacity:.6">v4.14</span>For entertainment. Not betting advice — this is a one-file hobby model, not an edge. If gambling stops being fun: <a href="tel:1-800-426-2537">1-800-GAMBLER</a>.</p>
 
   <section class="method" id="learn"></section>
 
@@ -570,7 +570,10 @@ function backtest(){
   const rows = Object.values(res).filter(b => b.n).map(b => ({...b, rmse:Math.sqrt(b.se/b.n), mae:b.ae/b.n, brier:b.brier/b.n}));
   let best = null; for(const b of rows) if(!best || b.rmse < best.rmse - 1e-9 || (Math.abs(b.rmse-best.rmse) < 1e-9 && b.w < best.w)) best = b;   // ties → trust the market
   const n = done.length, ready = n >= AUTO_MIN;
-  const auto = best ? (n*best.w + PRIOR_N*0.35) / (n + PRIOR_N) : null;   // shrink the winner toward the 35% prior
+  /* v4.14: the winner is shrunk toward 0% (the market), not 35%. A stats-vs-line slope over 2021–25 (1,279 NFL games) and this season is
+     negative at every shrink setting and in every phase of the season — the ratings have never added information to the closing line — so
+     the honest prior is "trust the line". Auto still lets the stats in when a season shows they help; it just no longer assumes they do. */
+  const auto = best ? (n*best.w) / (n + PRIOR_N) : null;
   learn = {n, rows, best, auto, ready};
   if(best && n >= K_MIN && best.K !== K_SHRINK){ K_SHRINK = best.K; store.set("k", K_SHRINK); }
   const btn = document.getElementById("autoBtn");
@@ -611,7 +614,7 @@ function renderLearn(){
   const rowH = r => `<tr${r.w===learn.best.w?' class="best"':''}><td>${Math.round(r.w*100)}% stats</td><td>${r.rmse.toFixed(2)}</td><td>${r.mae.toFixed(2)}</td><td>${r.brier.toFixed(3)}</td><td>${r.W}–${r.L}${r.P?"–"+r.P:""}</td></tr>`;
   box.innerHTML = `<h2>What the model has learned</h2>
     <p>Backtested on <b>${learn.n} games</b> across ${new Set(week1.filter(g=>g.final&&g.week>1).map(g=>g.week)).size} week(s), always predicting a week from only the weeks before it.
-    Best raw setting so far: <b>${Math.round(learn.best.w*100)}% stats</b>; blended with the 35% prior that gives Auto = <b>${Math.round(learn.auto*100)}%</b>${learn.ready ? "" : ` (locked until ${AUTO_MIN} games)`}. Shrink K=${K_SHRINK}.
+    Best raw setting so far: <b>${Math.round(learn.best.w*100)}% stats</b>; shrunk toward the market (0%) while the sample is small, that gives Auto = <b>${Math.round(learn.auto*100)}%</b>${learn.ready ? "" : ` (locked until ${AUTO_MIN} games)`}. Shrink K=${K_SHRINK}.
     ${stats && mkt ? (stats.rmse < mkt.rmse ? `The stats have beaten the market on margin error (${stats.rmse.toFixed(2)} vs ${mkt.rmse.toFixed(2)}).` : `The market still beats stats-only on margin error (${mkt.rmse.toFixed(2)} vs ${stats.rmse.toFixed(2)}).`) : ""}</p>
     <table><tr><th>Weight</th><th>RMSE</th><th>Avg miss</th><th>Brier</th><th>ATS</th></tr>${atK.map(rowH).join("")}</table>
     <p class="note">RMSE / avg miss = how far the predicted margin was from the real one, in points (lower is better; a coin-flip line is ~13.5). Brier = win-probability accuracy (0.25 is a coin flip; lower is better). ATS = how the picks would have done. Under ~50 games this bounces around a lot — treat it as a hint, not a verdict.</p>`;
